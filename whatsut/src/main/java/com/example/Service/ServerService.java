@@ -10,6 +10,8 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import com.example.Models.FileMessage;
 import com.example.Models.Group;
@@ -17,6 +19,7 @@ import com.example.Models.Message;
 import com.example.Models.PrivateMessages;
 import com.example.Models.TextMessage;
 import com.example.Models.User;
+import com.example.Rmi.ClientRemote;
 import com.example.Rmi.ServerRemote;
 import com.example.Utils.ConversationKey;
 
@@ -25,42 +28,51 @@ public class ServerService extends UnicastRemoteObject implements ServerRemote {
     private final Map<String, User> authenticatedUsers = new ConcurrentHashMap<>();
     private final Map<String, Group> groups = new ConcurrentHashMap<>();
     private final Map<ConversationKey, PrivateMessages> privateMessages = new ConcurrentHashMap<>();
+    private final Map<String, ClientRemote> clientCallbacks = new ConcurrentHashMap<>();
+    private final ExecutorService callbackExecutor = Executors.newCachedThreadPool();
 
     public ServerService() throws RemoteException {
         super();
     }
 
     @Override
-    public synchronized User registerUser(String name, String password) throws RemoteException {
-        validateRequired(name, "Nome");
+    public synchronized User registerUser(String userName, String password) throws RemoteException {
+        validateRequired(userName, "Nome");
         validateRequired(password, "Password");
 
-        if (users.containsKey(name)) {
-            throw new RemoteException("Usuario ja existe: " + name);
+        if (users.containsKey(userName)) {
+            throw new RemoteException("Usuario ja existe: " + userName);
         }
 
-        User user = new User(name, hashPassword(password));
-        users.put(name, user);
+        User user = new User(userName, hashPassword(password));
+        users.put(userName, user);
         return user;
     }
 
     @Override
-    public synchronized boolean authenticate(String name, String password) throws RemoteException {
-        validateRequired(name, "Nome");
+    public synchronized boolean login(String userName, String password, ClientRemote clientRemote) throws RemoteException {
+        validateRequired(userName, "Nome");
         validateRequired(password, "Password");
-
-        User user = users.get(name);
-        if (user != null && user.VerifyHashPassword(hashPassword(password))) {
-            authenticatedUsers.put(name, user);
-            return true;
+        
+        if (clientRemote == null) {
+            throw new RemoteException("Callback do cliente e obrigatorio.");
         }
-        return false;
+
+        User user = users.get(userName);
+        if (user == null || !user.VerifyHashPassword(hashPassword(password))) {
+            throw new RemoteException("Credenciais invalidas para usuario: " + userName);
+        }
+
+        authenticatedUsers.put(userName, user);
+        clientCallbacks.put(userName, clientRemote);
+        return true;
     }
 
     @Override
     public synchronized void logout(String userName) throws RemoteException {
         isAuthenticated(userName);
         authenticatedUsers.remove(userName);
+        clientCallbacks.remove(userName);
     }
 
     @Override

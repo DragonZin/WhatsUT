@@ -11,9 +11,9 @@ import java.rmi.RemoteException;
 import java.util.List;
 
 public interface ServerRemote extends Remote {
-    User registerUser(String name, String password) throws RemoteException;
-    boolean authenticate(String name, String password) throws RemoteException;
-    void logout(String name) throws RemoteException;
+    User registerUser(String userName, String password) throws RemoteException;
+    boolean login(String userName, String password, ClientRemote clientRemote) throws RemoteException;
+    void logout(String userName) throws RemoteException;
 
     Group createGroup(String groupName, String adminName) throws RemoteException;
 
