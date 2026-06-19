@@ -160,6 +160,8 @@ public class ServerService extends UnicastRemoteObject implements ServerRemote {
         ConversationKey key = new ConversationKey(Sender, Receiver);
         
         privateMessages.computeIfAbsent(key, k -> new PrivateMessages(Sender, Receiver)).addMessage(textMessage);
+        notifyPrivateMessage(Sender, Receiver, textMessage);
+
         return true;
     }
 
@@ -172,6 +174,7 @@ public class ServerService extends UnicastRemoteObject implements ServerRemote {
         ConversationKey key = new ConversationKey(Sender, Receiver);
 
         privateMessages.computeIfAbsent(key, k -> new PrivateMessages(Sender, Receiver)).addMessage(fileMessage);
+        notifyPrivateMessage(Sender, Receiver, fileMessage);
 
         return true;
     }
@@ -313,6 +316,21 @@ public class ServerService extends UnicastRemoteObject implements ServerRemote {
                     // O cliente pode ter encerrado a ligacao; a proxima operacao de login atualiza o callback.
                 }
             });
+        });
+    }
+
+    private void notifyPrivateMessage(String senderName, String receiverName, Message message) {
+        ClientRemote receiverClient = clientCallbacks.get(receiverName);
+        if (receiverClient == null) {
+            return;
+        }
+
+        callbackExecutor.submit(() -> {
+            try {
+                receiverClient.refreshPrivateMessage(senderName, message);
+            } catch (RemoteException ignored) {
+                // O cliente pode ter encerrado a ligacao; a proxima operacao de login atualiza o callback.
+            }
         });
     }
 

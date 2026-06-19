@@ -157,6 +157,7 @@ public class Client {
         service.onRefreshGroups(() -> System.out.printf("%n[Notificacao] Lista de grupos atualizada.%nOpcao: "));
         service.onRefreshRequest((groupName, requesterName) -> System.out.printf("%n[Notificacao] Novo pedido de %s no grupo %s.%nOpcao: ", requesterName, groupName));
         service.onRefreshMessage((groupName, message) -> System.out.printf("%n[Notificacao] Nova mensagem em %s de %s.%nOpcao: ", groupName, message.getSender().GetName()));
+        service.onRefreshPrivateMessage((senderName, message) -> System.out.printf("%n[Notificacao] Nova mensagem privada de %s.%nOpcao: ", senderName));
         service.register(password);
         clientService = service;
         currentUser = name;

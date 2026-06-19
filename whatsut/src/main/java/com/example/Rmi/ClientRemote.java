@@ -11,4 +11,6 @@ public interface ClientRemote extends Remote {
     void refreshRequest(String groupName, String userName) throws RemoteException;
 
     void refreshMessage(String groupName, Message message) throws RemoteException;
+
+    void refreshPrivateMessage(String senderName, Message message) throws RemoteException;
 }

@@ -16,6 +16,7 @@ public class ClientService extends UnicastRemoteObject implements ClientRemote, 
     private Runnable groupsRefreshCallback = () -> { };
     private BiConsumer<String, String> requestRefreshCallback = (groupName, requesterName) -> { };
     private BiConsumer<String, Message> messageRefreshCallback = (groupName, message) -> { };
+    private BiConsumer<String, Message> privateMessageRefreshCallback = (senderName, message) -> { };
     private Consumer<RemoteException> errorCallback = exception -> { };
     private boolean registered;
 
@@ -63,6 +64,10 @@ public class ClientService extends UnicastRemoteObject implements ClientRemote, 
         messageRefreshCallback = callback == null ? (groupName, message) -> { } : callback;
     }
 
+    public void onRefreshPrivateMessage(BiConsumer<String, Message> callback) {
+        privateMessageRefreshCallback = callback == null ? (senderName, message) -> { } : callback;
+    }
+
     public void onError(Consumer<RemoteException> callback) {
         errorCallback = callback == null ? exception -> { } : callback;
     }
@@ -80,6 +85,11 @@ public class ClientService extends UnicastRemoteObject implements ClientRemote, 
     @Override
     public void refreshMessage(String groupName, Message message) throws RemoteException {
         executeCallback(() -> messageRefreshCallback.accept(groupName, message));
+    }
+    
+    @Override
+    public void refreshPrivateMessage(String senderName, Message message) throws RemoteException {
+        executeCallback(() -> privateMessageRefreshCallback.accept(senderName, message));
     }
 
     @Override
