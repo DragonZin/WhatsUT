@@ -185,7 +185,7 @@ public class ServerService extends UnicastRemoteObject implements ServerRemote {
 
         group.addMessage(textMessage);
         notifyGroupMessage(group, textMessage);
-        
+
         return true;
     }
 
