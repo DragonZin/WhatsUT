@@ -145,7 +145,7 @@ public class ServerService extends UnicastRemoteObject implements ServerRemote {
         ConversationKey key = new ConversationKey(Sender, Receiver);
 
         privateMessages.computeIfAbsent(key, k -> new PrivateMessages(Sender, Receiver)).addMessage(fileMessage);
-        
+
         return true;
     }
 
@@ -179,6 +179,15 @@ public class ServerService extends UnicastRemoteObject implements ServerRemote {
         group.addMessage(fileMessage);
 
         return true;
+    }
+
+    @Override
+    public List<Message> getPrivateMessages(String Sender, String Receiver) throws RemoteException {
+        isAuthenticated(Sender);
+        ConversationKey key = new ConversationKey(Sender, Receiver);
+        PrivateMessages messages = privateMessages.get(key);
+
+        return messages.getMessages();
     }
 
     @Override
