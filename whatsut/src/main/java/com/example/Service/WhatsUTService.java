@@ -6,6 +6,7 @@ import com.example.Models.TextMessage;
 import com.example.Models.FileMessage;
 import com.example.Models.User;
 import com.example.Rmi.WhatsUTRemote;
+import com.example.Socket.WhatsUTSocket;
 
 import java.nio.charset.StandardCharsets;
 import java.rmi.RemoteException;
@@ -22,9 +23,11 @@ public class WhatsUTService extends UnicastRemoteObject implements WhatsUTRemote
     private final Map<String, User> users = new ConcurrentHashMap<>();
     private final Map<String, User> authenticatedUsers = new ConcurrentHashMap<>();
     private final Map<String, Group> groups = new ConcurrentHashMap<>();
+    private final WhatsUTSocket notificationServer;
 
-    public WhatsUTService() throws RemoteException {
+    public WhatsUTService(WhatsUTSocket notificationServer) throws RemoteException {
         super();
+        this.notificationServer = notificationServer;
     }
 
     @Override
@@ -55,18 +58,14 @@ public class WhatsUTService extends UnicastRemoteObject implements WhatsUTRemote
     }
 
     @Override
-    public void logout(String name) throws RemoteException {
-        if (!isAuthenticated(name)) {
-            throw new RemoteException("Usuario nao autenticado: " + name);
-        }
-        authenticatedUsers.remove(name);
+    public void logout(String userName) throws RemoteException {
+        isAuthenticated(userName);
+        authenticatedUsers.remove(userName);
     }
 
     @Override
     public synchronized Group createGroup(String groupName, String adminName) throws RemoteException {
-        if (!isAuthenticated(adminName)) {
-            throw new RemoteException("Usuario nao autenticado: " + adminName);
-        }
+        isAuthenticated(adminName);
         validateRequired(groupName, "Nome do grupo");
         User admin = getExistingUser(adminName);
 
@@ -76,14 +75,14 @@ public class WhatsUTService extends UnicastRemoteObject implements WhatsUTRemote
 
         Group group = new Group(groupName, admin);
         groups.put(groupName, group);
+        
+        notificationServer.notifyUsers(authenticatedUsers.values(), "NEW_GROUP");
         return group;
     }
 
     @Override
     public synchronized boolean requestJoinGroup(String groupName, String userName) throws RemoteException {
-        if (!isAuthenticated(userName)) {
-            throw new RemoteException("Usuario nao autenticado: " + userName);
-        }
+        isAuthenticated(userName);
         Group group = getExistingGroup(groupName);
         User user = getExistingUser(userName);
 
@@ -92,14 +91,14 @@ public class WhatsUTService extends UnicastRemoteObject implements WhatsUTRemote
         }
 
         group.addPendingMember(user);
+        
+        notificationServer.notifyUser(group.getAdmin(), "NEW_JOIN_REQUEST");
         return true;
     }
 
     @Override
     public synchronized boolean approvePendingMember(String groupName, String adminName, String userName) throws RemoteException {
-        if (!isAuthenticated(adminName)) {
-            throw new RemoteException("Usuario nao autenticado: " + adminName);
-        }
+        isAuthenticated(adminName);
         Group group = getExistingGroup(groupName);
         User admin = getExistingUser(adminName);
         User user = getExistingUser(userName);
@@ -113,9 +112,7 @@ public class WhatsUTService extends UnicastRemoteObject implements WhatsUTRemote
 
     @Override
     public synchronized boolean sendTextMessage(String groupName, String senderName, String content) throws RemoteException {
-        if (!isAuthenticated(senderName)) {
-            throw new RemoteException("Usuario nao autenticado: " + senderName);
-        }
+        isAuthenticated(senderName);
         validateRequired(content, "Mensagem");
         Group group = getExistingGroup(groupName);
         User sender = getExistingUser(senderName);
@@ -125,14 +122,14 @@ public class WhatsUTService extends UnicastRemoteObject implements WhatsUTRemote
         }
 
         group.addMessage(new TextMessage(content, sender));
+
+        notificationServer.notifyUsers(group.getMembers(), "NEW_MESSAGE");
         return true;
     }
 
     @Override
     public List<Message> getMessages(String groupName, String userName) throws RemoteException {
-        if (!isAuthenticated(userName)) {
-            throw new RemoteException("Usuario nao autenticado: " + userName);
-        }
+        isAuthenticated(userName);
         Group group = getExistingGroup(groupName);
         User user = getExistingUser(userName);
 
@@ -145,47 +142,41 @@ public class WhatsUTService extends UnicastRemoteObject implements WhatsUTRemote
 
     @Override
     public List<Group> listGroups(String userName) throws RemoteException {
-        if (!isAuthenticated(userName)) {
-            throw new RemoteException("Usuario nao autenticado: " + userName);
-        }
+        isAuthenticated(userName);
         return new ArrayList<>(groups.values());
     }
 
     @Override
     public List<User> listGroupUsers(String userName, String groupName) throws RemoteException {
-        if (!isAuthenticated(userName)) {
-            throw new RemoteException("Usuario nao autenticado: " + userName);
-        }
-
+        isAuthenticated(userName);
         Group group = getExistingGroup(groupName);
-        if (group == null) {
-            throw new RemoteException("Grupo nao encontrado: " + groupName);
-        }
 
         if (!group.hasMember(getExistingUser(userName))) {
             throw new RemoteException("Usuario nao pertence ao grupo: " + userName);
         }
-        
+
         return new ArrayList<>(group.getMembers());
     }
 
     @Override
     public List<User> listAuthenticatedUsers(String userName) throws RemoteException {
-        if (!isAuthenticated(userName)) {
-            throw new RemoteException("Usuario nao autenticado: " + userName);
-        }
+        isAuthenticated(userName);        
         return new ArrayList<>(authenticatedUsers.values());
     }
 
-    private boolean isAuthenticated(String name) {
-        return authenticatedUsers.containsKey(name);
+    private void isAuthenticated(String userName) throws RemoteException {
+        validateRequired(userName, "Nome de usuario");
+
+        if (!authenticatedUsers.containsKey(userName)) {
+            throw new RemoteException("Usuario nao autenticado: " + userName);
+        }
     }
 
-    private User getExistingUser(String name) throws RemoteException {
-        validateRequired(name, "Nome de utilizador");
-        User user = users.get(name);
+    private User getExistingUser(String userName) throws RemoteException {
+        validateRequired(userName, "Nome de usuario");
+        User user = users.get(userName);
         if (user == null) {
-            throw new RemoteException("Utilizador nao encontrado: " + name);
+            throw new RemoteException("Usuario nao encontrado: " + userName);
         }
         return user;
     }
