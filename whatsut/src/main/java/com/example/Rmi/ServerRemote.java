@@ -33,5 +33,6 @@ public interface ServerRemote extends Remote {
     
     List<Group> listGroups(String userName) throws RemoteException;
     List<User> listGroupUsers(String userName, String groupName) throws RemoteException;
+    List<User> listUsers(String userName) throws RemoteException;
     List<User> listAuthenticatedUsers(String userName) throws RemoteException;
 }

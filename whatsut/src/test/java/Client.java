@@ -110,14 +110,15 @@ public class Client {
         System.out.println("5) Enviar mensagem de texto para grupo");
         System.out.println("6) Ver mensagens do grupo");
         System.out.println("7) Listar membros de grupo");
-        System.out.println("8) Listar usuarios autenticados");
-        System.out.println("9) Enviar mensagem privada de texto");
-        System.out.println("10) Ver mensagens privadas");
-        System.out.println("11) Enviar arquivo para grupo");
-        System.out.println("12) Enviar arquivo privado");
-        System.out.println("13) Remover membro do grupo");
-        System.out.println("14) Teste automatico (roda comandos 5 vezes)");
-        System.out.println("15) Logout");
+        System.out.println("8) Listar usuarios");
+        System.out.println("9) Listar usuarios autenticados");
+        System.out.println("10) Enviar mensagem privada de texto");
+        System.out.println("11) Ver mensagens privadas");
+        System.out.println("12) Enviar arquivo para grupo");
+        System.out.println("13) Enviar arquivo privado");
+        System.out.println("14) Remover membro do grupo");
+        System.out.println("15) Teste automatico (roda comandos 5 vezes)");
+        System.out.println("16) Logout");
         System.out.println("0) Sair");
         String option = readRequired("Opcao: ");
 
@@ -129,14 +130,15 @@ public class Client {
             case "5" -> sendGroupTextMessage();
             case "6" -> showGroupMessages();
             case "7" -> listGroupUsers();
-            case "8" -> listAuthenticatedUsers();
-            case "9" -> sendPrivateTextMessage();
-            case "10" -> showPrivateMessages();
-            case "11" -> sendGroupFileMessage();
-            case "12" -> sendPrivateFileMessage();
-            case "13" -> deleteUserFromGroup();
-            case "14" -> runAutomaticTest();
-            case "15" -> logout();
+            case "8" -> listUsers();
+            case "9" -> listAuthenticatedUsers();
+            case "10" -> sendPrivateTextMessage();
+            case "11" -> showPrivateMessages();
+            case "12" -> sendGroupFileMessage();
+            case "13" -> sendPrivateFileMessage();
+            case "14" -> deleteUserFromGroup();
+            case "15" -> runAutomaticTest();
+            case "16" -> logout();
             case "0" -> { return false; }
             default -> System.out.println("Opcao invalida.");
         }
@@ -228,6 +230,10 @@ public class Client {
 
     private void listAuthenticatedUsers() throws RemoteException {
         printUsers(remote.listAuthenticatedUsers(currentUser));
+    }
+
+    private void listUsers() throws RemoteException {
+        printUsers(remote.listUsers(currentUser));
     }
 
     private void deleteUserFromGroup() throws RemoteException {

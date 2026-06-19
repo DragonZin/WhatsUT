@@ -254,6 +254,12 @@ public class ServerService extends UnicastRemoteObject implements ServerRemote {
     }
 
     @Override
+    public List<User> listUsers(String userName) throws RemoteException {
+        isAuthenticated(userName);
+        return new ArrayList<>(users.values());
+    }
+
+    @Override
     public List<User> listAuthenticatedUsers(String userName) throws RemoteException {
         isAuthenticated(userName);        
         return new ArrayList<>(authenticatedUsers.values());
