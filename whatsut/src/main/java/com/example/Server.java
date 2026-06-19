@@ -9,10 +9,9 @@ import java.rmi.AlreadyBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class Main {
+public class Server {
     private static final int RMI_PORT = 1099;
     private static final int NOTIFICATION_PORT = 5000;
     private static final String SERVICE_NAME = "WhatsUT";

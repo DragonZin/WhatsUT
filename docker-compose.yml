@@ -5,4 +5,5 @@ services:
     container_name: whatsut
     ports:
       - "1099:1099"
+      - "5000:5000"
     restart: unless-stopped

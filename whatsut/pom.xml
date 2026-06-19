@@ -30,7 +30,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>com.example.Main</mainClass>
+                            <mainClass>com.example.Server</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
