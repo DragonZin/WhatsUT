@@ -58,6 +58,10 @@ public class ServerService extends UnicastRemoteObject implements ServerRemote {
             throw new RemoteException("Callback do cliente e obrigatorio.");
         }
 
+        if (authenticatedUsers.containsKey(userName)) {
+            throw new RemoteException("Usuario ja autenticado: " + userName);
+        }
+
         User user = users.get(userName);
         if (user == null || !user.VerifyHashPassword(hashPassword(password))) {
             throw new RemoteException("Credenciais invalidas para usuario: " + userName);
