@@ -258,14 +258,20 @@ public class ServerService extends UnicastRemoteObject implements ServerRemote {
         isAuthenticated(userName);        
         return new ArrayList<>(authenticatedUsers.values());
     }
-        private void notifyAllGroupsChanged() {
-        clientCallbacks.values().forEach(client -> callbackExecutor.submit(() -> {
-            try {
-                client.refreshGroups();
-            } catch (RemoteException ignored) {
-                // O cliente pode ter encerrado a ligacao; a proxima operacao de login atualiza o callback.
-            }
-        }));
+
+    private void notifyAllGroupsChanged() {
+        clientCallbacks.entrySet().forEach(entry -> {
+            String userName = entry.getKey();
+            ClientRemote client = entry.getValue();
+
+            callbackExecutor.submit(() -> {
+                try {
+                    client.refreshGroups();
+                } catch (RemoteException e) {
+                    removeDeadClient(userName);
+                }
+            });
+        });
     }
 
     private void notifyGroupMembersChanged(Group group) {
@@ -281,8 +287,8 @@ public class ServerService extends UnicastRemoteObject implements ServerRemote {
         callbackExecutor.submit(() -> {
             try {
                 client.refreshGroups();
-            } catch (RemoteException ignored) {
-                // O cliente pode ter encerrado a ligacao; a proxima operacao de login atualiza o callback.
+            } catch (RemoteException e) {
+                removeDeadClient(userName);
             }
         });
     }
@@ -296,8 +302,8 @@ public class ServerService extends UnicastRemoteObject implements ServerRemote {
         callbackExecutor.submit(() -> {
             try {
                 adminClient.refreshRequest(group.getName(), requesterName);
-            } catch (RemoteException ignored) {
-                // O cliente pode ter encerrado a ligacao; a proxima operacao de login atualiza o callback.
+            } catch (RemoteException e) {
+                removeDeadClient(group.getAdmin().GetName());
             }
         });
     }
@@ -312,8 +318,8 @@ public class ServerService extends UnicastRemoteObject implements ServerRemote {
             callbackExecutor.submit(() -> {
                 try {
                     client.refreshMessage(group.getName(), message);
-                } catch (RemoteException ignored) {
-                    // O cliente pode ter encerrado a ligacao; a proxima operacao de login atualiza o callback.
+                } catch (RemoteException e) {
+                    removeDeadClient(member.GetName());
                 }
             });
         });
@@ -328,8 +334,8 @@ public class ServerService extends UnicastRemoteObject implements ServerRemote {
         callbackExecutor.submit(() -> {
             try {
                 receiverClient.refreshPrivateMessage(senderName, message);
-            } catch (RemoteException ignored) {
-                // O cliente pode ter encerrado a ligacao; a proxima operacao de login atualiza o callback.
+            } catch (RemoteException e) {
+                removeDeadClient(receiverName);
             }
         });
     }
@@ -340,6 +346,11 @@ public class ServerService extends UnicastRemoteObject implements ServerRemote {
         if (!authenticatedUsers.containsKey(userName)) {
             throw new RemoteException("Usuario nao autenticado: " + userName);
         }
+    }
+
+    private void removeDeadClient(String userName) {
+        authenticatedUsers.remove(userName);
+        clientCallbacks.remove(userName);
     }
 
     private User getExistingUser(String userName) throws RemoteException {
