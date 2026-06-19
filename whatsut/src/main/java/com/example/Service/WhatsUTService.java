@@ -18,6 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class WhatsUTService extends UnicastRemoteObject implements WhatsUTRemote {
     private final Map<String, User> users = new ConcurrentHashMap<>();
+    private final Map<String, User> authenticatedUsers = new ConcurrentHashMap<>();
     private final Map<String, Group> groups = new ConcurrentHashMap<>();
 
     public WhatsUTService() throws RemoteException {
@@ -44,7 +45,19 @@ public class WhatsUTService extends UnicastRemoteObject implements WhatsUTRemote
         validateRequired(password, "Password");
 
         User user = users.get(name);
-        return user != null && user.VerifyHashPassword(hashPassword(password));
+        if (user != null && user.VerifyHashPassword(hashPassword(password))) {
+            authenticatedUsers.put(name, user);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public void logout(String name) throws RemoteException {
+        if (!isAuthenticated(name)) {
+            throw new RemoteException("Usuario nao autenticado: " + name);
+        }
+        authenticatedUsers.remove(name);
     }
 /*
     @Override
@@ -112,15 +125,24 @@ public class WhatsUTService extends UnicastRemoteObject implements WhatsUTRemote
 
         return group.getMessages();
     }
-
+*/
     @Override
     public List<Group> listGroups() {
         return new ArrayList<>(groups.values());
-    }*/
+    }
 
     @Override
     public List<User> listUsers() {
         return new ArrayList<>(users.values());
+    }
+
+    @Override
+    public List<User> listAuthenticatedUsers() throws RemoteException {
+        return new ArrayList<>(authenticatedUsers.values());
+    }
+
+    private boolean isAuthenticated(String name) {
+        return authenticatedUsers.containsKey(name);
     }
 
     private User getExistingUser(String name) throws RemoteException {

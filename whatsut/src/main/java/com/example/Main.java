@@ -9,12 +9,12 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 
 public class Main {
-    private static final int DEFAULT_RMI_PORT = 1099;
-    private static final String DEFAULT_SERVICE_NAME = "WhatsUT";
+    private static final int RMI_PORT = 1099;
+    private static final String SERVICE_NAME = "WhatsUT";
 
     public static void main(String[] args) throws RemoteException, AlreadyBoundException {
-        int port = getPort();
-        String serviceName = getServiceName();
+        int port = RMI_PORT;
+        String serviceName = SERVICE_NAME;
 
         System.setProperty("java.rmi.server.hostname", getHostname());
 
@@ -23,22 +23,6 @@ public class Main {
         registry.bind(serviceName, service);
 
         System.out.printf("Servidor RMI WhatsUT iniciado em rmi://%s:%d/%s%n", getHostname(), port, serviceName);
-    }
-
-    private static int getPort() {
-        String value = System.getenv("RMI_PORT");
-        if (value == null || value.isBlank()) {
-            return DEFAULT_RMI_PORT;
-        }
-        return Integer.parseInt(value);
-    }
-
-    private static String getServiceName() {
-        String value = System.getenv("RMI_SERVICE_NAME");
-        if (value == null || value.isBlank()) {
-            return DEFAULT_SERVICE_NAME;
-        }
-        return value;
     }
 
     private static String getHostname() {

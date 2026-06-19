@@ -1,8 +1,10 @@
 package com.example.Models;
 
+import java.io.Serializable;
 import java.time.Instant;
 
-public abstract class Message {
+public abstract class Message implements Serializable {
+    private static final long serialVersionUID = 1L;
     private String content;
     private User sender;
     private Instant timestamp;

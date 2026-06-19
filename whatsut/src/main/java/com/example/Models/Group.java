@@ -1,8 +1,11 @@
 package com.example.Models;
 
+import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 
-public class Group {
+public class Group implements Serializable {
+    private static final long serialVersionUID = 1L;
     private String name;
     private List<User> members;
     private List<User> pendingMembers;
@@ -11,8 +14,11 @@ public class Group {
 
     public Group(String name, User admin) {
         this.name = name;
+        this.members = new ArrayList<>();
+        this.pendingMembers = new ArrayList<>();
         this.members.add(admin);
-        this.admin = admin;    
+        this.admin = admin;
+        this.messages = new ArrayList<>();    
     }
 
     public String getName() { return name; }

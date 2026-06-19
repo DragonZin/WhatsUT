@@ -18,9 +18,9 @@ public class TestClient {
             System.out.println("Conectado ao servidor!");
 
             // Teste das funções
-            /*service.registerUser("testuser1", "password123");
-            boolean authenticated = service.authenticate("testuser", "password123");
-            System.out.println("Autenticação bem-sucedida: " + authenticated);*/
+            service.registerUser("testuser2", "password123");
+            boolean authenticated = service.authenticate("testuser1", "password123");
+            System.out.println("Autenticação bem-sucedida: " + authenticated);
 
             service.listUsers().forEach(user -> System.out.println("Usuário registrado: " + user.GetName()));
 
