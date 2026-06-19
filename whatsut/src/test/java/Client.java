@@ -54,6 +54,7 @@ public class Client {
     }
 
     private void run() {
+        consoleClear();
         System.out.println("=== WhatsUT Console Client ===");
         boolean running = true;
         while (running) {
@@ -71,6 +72,18 @@ public class Client {
         }
         shutdown();
         System.out.println("Ate logo!");
+    }
+
+    private void consoleClear() {
+        try {
+            if (System.getProperty("os.name").toLowerCase().contains("windows")) {
+                new ProcessBuilder("cmd", "/c", "cls").inheritIO().start().waitFor();
+            } else {
+                new ProcessBuilder("clear").inheritIO().start().waitFor();
+            }
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     private boolean showAnonymousMenu() throws RemoteException {
