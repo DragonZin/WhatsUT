@@ -59,7 +59,7 @@ public class ServerService extends UnicastRemoteObject implements ServerRemote {
         }
 
         if (authenticatedUsers.containsKey(userName)) {
-            throw new RemoteException("Usuario ja autenticado: " + userName);
+            removeDeadClient(userName);
         }
 
         User user = users.get(userName);
