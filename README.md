@@ -158,7 +158,7 @@ A interface `ServerRemote` expõe operações para:
 - `sendPrivateTextMessage` e `sendPrivateFileMessage` — enviar mensagens privadas;
 - `sendGroupTextMessage` e `sendGroupFileMessage` — enviar mensagens para grupos;
 - `getMessages` e `getPrivateMessages` — consultar histórico;
-- `listGroups`, `listGroupUsers` e `listAuthenticatedUsers` — listar dados do sistema.
+- `listGroups`, `listGroupUsers`, `listUsers` e `listAuthenticatedUsers` — listar dados do sistema.
 
 A interface `ClientRemote` define callbacks usados pelo servidor para atualizar clientes conectados.
 
