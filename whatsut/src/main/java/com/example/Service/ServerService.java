@@ -87,7 +87,8 @@ public class ServerService extends UnicastRemoteObject implements ServerRemote {
 
         Group group = new Group(groupName, admin);
         groups.put(groupName, group);
-        
+        notifyAllGroupsChanged();
+
         return group;
     }
 
@@ -101,7 +102,12 @@ public class ServerService extends UnicastRemoteObject implements ServerRemote {
             return false;
         }
 
-        return group.addPendingMember(user);
+        boolean added = group.addPendingMember(user);
+        if (added) {
+            notifyJoinRequest(group, userName);
+        }
+
+        return added;
     }
 
     @Override
@@ -115,7 +121,12 @@ public class ServerService extends UnicastRemoteObject implements ServerRemote {
             throw new RemoteException("Apenas o administrador pode aprovar membros.");
         }
 
-        return group.approvePendingMember(user);
+        boolean approved = group.approvePendingMember(user);
+        if (approved) {
+            notifyGroupMembersChanged(group);
+        }
+
+        return approved;
     }
 
     @Deprecated
@@ -173,7 +184,8 @@ public class ServerService extends UnicastRemoteObject implements ServerRemote {
         }
 
         group.addMessage(textMessage);
-
+        notifyGroupMessage(group, textMessage);
+        
         return true;
     }
 
@@ -189,7 +201,8 @@ public class ServerService extends UnicastRemoteObject implements ServerRemote {
         }
 
         group.addMessage(fileMessage);
-
+        notifyGroupMessage(group, fileMessage);
+        
         return true;
     }
 
@@ -237,6 +250,66 @@ public class ServerService extends UnicastRemoteObject implements ServerRemote {
     public List<User> listAuthenticatedUsers(String userName) throws RemoteException {
         isAuthenticated(userName);        
         return new ArrayList<>(authenticatedUsers.values());
+    }
+        private void notifyAllGroupsChanged() {
+        clientCallbacks.values().forEach(client -> callbackExecutor.submit(() -> {
+            try {
+                client.refreshGroups();
+            } catch (RemoteException ignored) {
+                // O cliente pode ter encerrado a ligacao; a proxima operacao de login atualiza o callback.
+            }
+        }));
+    }
+
+    private void notifyGroupMembersChanged(Group group) {
+        group.getMembers().forEach(member -> notifyGroupsChanged(member.GetName()));
+    }
+
+    private void notifyGroupsChanged(String userName) {
+        ClientRemote client = clientCallbacks.get(userName);
+        if (client == null) {
+            return;
+        }
+
+        callbackExecutor.submit(() -> {
+            try {
+                client.refreshGroups();
+            } catch (RemoteException ignored) {
+                // O cliente pode ter encerrado a ligacao; a proxima operacao de login atualiza o callback.
+            }
+        });
+    }
+
+    private void notifyJoinRequest(Group group, String requesterName) {
+        ClientRemote adminClient = clientCallbacks.get(group.getAdmin().GetName());
+        if (adminClient == null) {
+            return;
+        }
+
+        callbackExecutor.submit(() -> {
+            try {
+                adminClient.refreshRequest(group.getName(), requesterName);
+            } catch (RemoteException ignored) {
+                // O cliente pode ter encerrado a ligacao; a proxima operacao de login atualiza o callback.
+            }
+        });
+    }
+
+    private void notifyGroupMessage(Group group, Message message) {
+        group.getMembers().forEach(member -> {
+            ClientRemote client = clientCallbacks.get(member.GetName());
+            if (client == null) {
+                return;
+            }
+
+            callbackExecutor.submit(() -> {
+                try {
+                    client.refreshMessage(group.getName(), message);
+                } catch (RemoteException ignored) {
+                    // O cliente pode ter encerrado a ligacao; a proxima operacao de login atualiza o callback.
+                }
+            });
+        });
     }
 
     private void isAuthenticated(String userName) throws RemoteException {

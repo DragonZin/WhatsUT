@@ -12,6 +12,7 @@ import java.util.function.Consumer;
 
 public class ClientService extends UnicastRemoteObject implements ClientRemote, AutoCloseable {
     private final String userName;
+    private final ServerRemote serverRemote;
     private Runnable groupsRefreshCallback = () -> { };
     private BiConsumer<String, String> requestRefreshCallback = (groupName, requesterName) -> { };
     private BiConsumer<String, Message> messageRefreshCallback = (groupName, message) -> { };
@@ -30,6 +31,24 @@ public class ClientService extends UnicastRemoteObject implements ClientRemote, 
 
     public String getUserName() {
         return userName;
+    }
+
+    public synchronized boolean register(String password) throws RemoteException {
+        if (registered) {
+            return true;
+        }
+
+        registered = serverRemote.login(userName, requireText(password, "Password"), this);
+        return registered;
+    }
+
+    public synchronized void unregister() throws RemoteException {
+        if (!registered) {
+            return;
+        }
+
+        serverRemote.logout(userName);
+        registered = false;
     }
 
     public void onRefreshGroups(Runnable callback) {
