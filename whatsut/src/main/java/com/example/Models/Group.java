@@ -15,8 +15,8 @@ public class Group implements Serializable {
     public Group(String name, User admin) {
         this.name = name;
         this.members = new ArrayList<>();
-        this.pendingMembers = new ArrayList<>();
         this.members.add(admin);
+        this.pendingMembers = new ArrayList<>();
         this.admin = admin;
         this.messages = new ArrayList<>();    
     }

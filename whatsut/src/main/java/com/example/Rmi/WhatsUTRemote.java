@@ -15,7 +15,7 @@ public interface WhatsUTRemote extends Remote {
 
     void logout(String name) throws RemoteException;
 
-    /*Group createGroup(String groupName, String adminName) throws RemoteException;
+    Group createGroup(String groupName, String adminName) throws RemoteException;
 
     boolean requestJoinGroup(String groupName, String userName) throws RemoteException;
 
@@ -24,10 +24,10 @@ public interface WhatsUTRemote extends Remote {
     boolean sendTextMessage(String groupName, String senderName, String content) throws RemoteException;
 
     List<Message> getMessages(String groupName, String userName) throws RemoteException;
-*/
-    List<Group> listGroups() throws RemoteException;
 
-    List<User> listUsers() throws RemoteException;
+    List<Group> listGroups(String userName) throws RemoteException;
+    
+    List<User> listGroupUsers(String userName, String groupName) throws RemoteException;
 
-    List<User> listAuthenticatedUsers() throws RemoteException;
+    List<User> listAuthenticatedUsers(String userName) throws RemoteException;
 }
