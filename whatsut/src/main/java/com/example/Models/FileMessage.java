@@ -2,17 +2,14 @@ package com.example.Models;
 
 public class FileMessage extends Message {
     private String fileName;
-    private String filePath;
-    private long fileSize;
+    private Byte[] Content;
 
-    public FileMessage(String fileName, String filePath, long fileSize, User sender) {
+    public FileMessage(String fileName, Byte[] content, User sender) {
         super(sender);
         this.fileName = fileName;
-        this.filePath = filePath;
-        this.fileSize = fileSize;
+        this.Content = content;
     }
 
     public String getFileName() { return fileName; }
-    public String getFilePath() { return filePath; }
-    public long getFileSize() { return fileSize; }
+    public Byte[] getContent() { return Content; }
 }

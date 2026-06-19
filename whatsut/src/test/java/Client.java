@@ -2,7 +2,7 @@ import com.example.Models.Group;
 import com.example.Models.Message;
 import com.example.Models.TextMessage;
 import com.example.Models.User;
-import com.example.Rmi.WhatsUTRemote;
+import com.example.Rmi.ServerRemote;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -26,13 +26,13 @@ public class Client {
             .withZone(ZoneId.systemDefault());
 
     private final Scanner scanner = new Scanner(System.in);
-    private final WhatsUTRemote remote;
+    private final ServerRemote remote;
     private final String notificationHost;
     private final int notificationPort;
     private String currentUser;
     private NotificationClient notificationClient;
 
-    public Client(WhatsUTRemote remote, String notificationHost, int notificationPort) {
+    public Client(ServerRemote remote, String notificationHost, int notificationPort) {
         this.remote = remote;
         this.notificationHost = notificationHost;
         this.notificationPort = notificationPort;
@@ -46,7 +46,7 @@ public class Client {
         String rmiUrl = String.format("rmi://%s:%d/%s", host, rmiPort, serviceName);
 
         try {
-            WhatsUTRemote remote = (WhatsUTRemote) Naming.lookup(rmiUrl);
+            ServerRemote remote = (ServerRemote) Naming.lookup(rmiUrl);
             new Client(remote, host, socketPort).run();
         } catch (Exception exception) {
             System.err.println("Nao foi possivel iniciar o cliente: " + exception.getMessage());
@@ -305,9 +305,9 @@ public class Client {
 
         private String describeEvent(String event) {
             return switch (event) {
-                case "NEW_GROUP" -> "Novo grupo criado."; //Quando receber essa notificao faz um listGroups para atualizar a lista de grupos
-                case "NEW_JOIN_REQUEST" -> "Novo pedido de entrada em grupo."; //Quando receber essa notificao indica pro admin que tem um novo pedido
-                case "NEW_MESSAGE" -> "Nova mensagem recebida.";//Quando receber essa notificao faz um showMessages para atualizar a lista de mensagens
+                case "REFRESH_GROUPS" -> "Novo grupo criado."; //Quando receber essa notificao faz um listGroups para atualizar a lista de grupos
+                case "REFRESH_REQUEST" -> "Novo pedido de entrada em grupo."; //Quando receber essa notificao indica pro admin que tem um novo pedido
+                case "REFRESH_MESSAGE" -> "Nova mensagem recebida.";//Quando receber essa notificao faz um showMessages para atualizar a lista de mensagens
                 default -> event;
             };
         }

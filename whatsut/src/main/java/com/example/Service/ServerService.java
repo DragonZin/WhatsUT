@@ -5,8 +5,7 @@ import com.example.Models.Message;
 import com.example.Models.TextMessage;
 import com.example.Models.FileMessage;
 import com.example.Models.User;
-import com.example.Rmi.WhatsUTRemote;
-import com.example.Socket.WhatsUTSocket;
+import com.example.Rmi.ServerRemote;
 
 import java.nio.charset.StandardCharsets;
 import java.rmi.RemoteException;
@@ -19,15 +18,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class WhatsUTService extends UnicastRemoteObject implements WhatsUTRemote {
+public class ServerService extends UnicastRemoteObject implements ServerRemote {
     private final Map<String, User> users = new ConcurrentHashMap<>();
     private final Map<String, User> authenticatedUsers = new ConcurrentHashMap<>();
     private final Map<String, Group> groups = new ConcurrentHashMap<>();
-    private final WhatsUTSocket notificationServer;
 
-    public WhatsUTService(WhatsUTSocket notificationServer) throws RemoteException {
+    public ServerService() throws RemoteException {
         super();
-        this.notificationServer = notificationServer;
     }
 
     @Override
@@ -45,7 +42,7 @@ public class WhatsUTService extends UnicastRemoteObject implements WhatsUTRemote
     }
 
     @Override
-    public boolean authenticate(String name, String password) throws RemoteException {
+    public synchronized boolean authenticate(String name, String password) throws RemoteException {
         validateRequired(name, "Nome");
         validateRequired(password, "Password");
 
@@ -58,7 +55,7 @@ public class WhatsUTService extends UnicastRemoteObject implements WhatsUTRemote
     }
 
     @Override
-    public void logout(String userName) throws RemoteException {
+    public synchronized void logout(String userName) throws RemoteException {
         isAuthenticated(userName);
         authenticatedUsers.remove(userName);
     }
@@ -76,7 +73,6 @@ public class WhatsUTService extends UnicastRemoteObject implements WhatsUTRemote
         Group group = new Group(groupName, admin);
         groups.put(groupName, group);
         
-        notificationServer.notifyUsers(authenticatedUsers.values(), "NEW_GROUP");
         return group;
     }
 
@@ -92,7 +88,6 @@ public class WhatsUTService extends UnicastRemoteObject implements WhatsUTRemote
 
         group.addPendingMember(user);
         
-        notificationServer.notifyUser(group.getAdmin(), "NEW_JOIN_REQUEST");
         return true;
     }
 
@@ -110,6 +105,24 @@ public class WhatsUTService extends UnicastRemoteObject implements WhatsUTRemote
         return group.approvePendingMember(user);
     }
 
+    @Deprecated
+    public synchronized boolean deleteUserFromGroup(String groupName, String adminName, String userName) throws RemoteException {
+        isAuthenticated(adminName);
+        Group group = getExistingGroup(groupName);
+        User admin = getExistingUser(adminName);
+        User user = getExistingUser(userName);
+
+        if (!group.getAdmin().equals(admin)) {
+            throw new RemoteException("Apenas o administrador pode remover membros.");
+        }
+
+        if (adminName.equals(userName)) {
+            groups.remove(groupName);
+        }
+
+        return group.removeMember(user);
+    }
+
     @Override
     public synchronized boolean sendTextMessage(String groupName, String senderName, String content) throws RemoteException {
         isAuthenticated(senderName);
@@ -123,7 +136,22 @@ public class WhatsUTService extends UnicastRemoteObject implements WhatsUTRemote
 
         group.addMessage(new TextMessage(content, sender));
 
-        notificationServer.notifyUsers(group.getMembers(), "NEW_MESSAGE");
+        return true;
+    }
+
+    @Override
+    public synchronized boolean sendFileMessage(String groupName, String senderName, FileMessage fileMessage) throws RemoteException {
+        isAuthenticated(senderName);
+        validateRequired(fileMessage.getFileName(), "Nome do arquivo");
+        Group group = getExistingGroup(groupName);
+        User sender = getExistingUser(senderName);
+
+        if (!group.hasMember(sender)) {
+            throw new RemoteException("Usuario nao pertence ao grupo: " + senderName);
+        }
+
+        group.addMessage(fileMessage);
+
         return true;
     }
 

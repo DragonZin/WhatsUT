@@ -25,6 +25,7 @@ public class Group implements Serializable {
     
     public List<User> getMembers() { return members; }
     public boolean hasMember(User user) { return members.contains(user); }
+    public boolean removeMember(User user) { return members.remove(user); }
         
     public List<User> getPendingMembers() { return pendingMembers; }
     public boolean hasPendingMember(User user) { return pendingMembers.contains(user); }
