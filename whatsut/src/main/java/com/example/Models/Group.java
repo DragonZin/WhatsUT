@@ -29,9 +29,9 @@ public class Group implements Serializable {
         
     public List<User> getPendingMembers() { return pendingMembers; }
     public boolean hasPendingMember(User user) { return pendingMembers.contains(user); }
-    public void addPendingMember(User user) {
-        if (hasPendingMember(user)) return;
-        pendingMembers.add(user);
+    public boolean addPendingMember(User user) {
+        if (hasPendingMember(user)) return false;
+        return pendingMembers.add(user);
     }
     public boolean approvePendingMember(User user) {
         if (!hasPendingMember(user)) return false;
@@ -43,7 +43,5 @@ public class Group implements Serializable {
     public User getAdmin() { return admin; }
 
     public List<Message> getMessages() { return messages; }
-    public void addMessage(Message message) {
-        messages.add(message);
-    }
+    public boolean addMessage(Message message) { return messages.add(message); }
 }

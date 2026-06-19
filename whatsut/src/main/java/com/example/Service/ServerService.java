@@ -1,12 +1,5 @@
 package com.example.Service;
 
-import com.example.Models.Group;
-import com.example.Models.Message;
-import com.example.Models.TextMessage;
-import com.example.Models.FileMessage;
-import com.example.Models.User;
-import com.example.Rmi.ServerRemote;
-
 import java.nio.charset.StandardCharsets;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
@@ -18,10 +11,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.example.Models.FileMessage;
+import com.example.Models.Group;
+import com.example.Models.Message;
+import com.example.Models.PrivateMessages;
+import com.example.Models.TextMessage;
+import com.example.Models.User;
+import com.example.Rmi.ServerRemote;
+import com.example.Utils.ConversationKey;
+
 public class ServerService extends UnicastRemoteObject implements ServerRemote {
     private final Map<String, User> users = new ConcurrentHashMap<>();
     private final Map<String, User> authenticatedUsers = new ConcurrentHashMap<>();
     private final Map<String, Group> groups = new ConcurrentHashMap<>();
+    private final Map<ConversationKey, PrivateMessages> privateMessages = new ConcurrentHashMap<>();
 
     public ServerService() throws RemoteException {
         super();
@@ -86,9 +89,7 @@ public class ServerService extends UnicastRemoteObject implements ServerRemote {
             return false;
         }
 
-        group.addPendingMember(user);
-        
-        return true;
+        return group.addPendingMember(user);
     }
 
     @Override
@@ -124,9 +125,34 @@ public class ServerService extends UnicastRemoteObject implements ServerRemote {
     }
 
     @Override
-    public synchronized boolean sendTextMessage(String groupName, String senderName, String content) throws RemoteException {
+    public synchronized boolean sendPrivateTextMessage(String Sender, String Receiver, TextMessage textMessage) throws RemoteException {
+        isAuthenticated(Sender);
+        validateRequired(textMessage.getContent(), "Mensagem");
+        getExistingUser(Receiver);
+
+        ConversationKey key = new ConversationKey(Sender, Receiver);
+        
+        privateMessages.computeIfAbsent(key, k -> new PrivateMessages(Sender, Receiver)).addMessage(textMessage);
+        return true;
+    }
+
+    @Override
+    public synchronized boolean sendPrivateFileMessage(String Sender, String Receiver, FileMessage fileMessage) throws RemoteException {
+        isAuthenticated(Sender);
+        validateRequired(fileMessage.getFileName(), "Nome do arquivo");
+        getExistingUser(Receiver);
+
+        ConversationKey key = new ConversationKey(Sender, Receiver);
+
+        privateMessages.computeIfAbsent(key, k -> new PrivateMessages(Sender, Receiver)).addMessage(fileMessage);
+        
+        return true;
+    }
+
+    @Override
+    public synchronized boolean sendGroupTextMessage(String groupName, String senderName, TextMessage textMessage) throws RemoteException {
         isAuthenticated(senderName);
-        validateRequired(content, "Mensagem");
+        validateRequired(textMessage.getContent(), "Mensagem");
         Group group = getExistingGroup(groupName);
         User sender = getExistingUser(senderName);
 
@@ -134,13 +160,13 @@ public class ServerService extends UnicastRemoteObject implements ServerRemote {
             throw new RemoteException("Usuario nao pertence ao grupo: " + senderName);
         }
 
-        group.addMessage(new TextMessage(content, sender));
+        group.addMessage(textMessage);
 
         return true;
     }
 
     @Override
-    public synchronized boolean sendFileMessage(String groupName, String senderName, FileMessage fileMessage) throws RemoteException {
+    public synchronized boolean sendGroupFileMessage(String groupName, String senderName, FileMessage fileMessage) throws RemoteException {
         isAuthenticated(senderName);
         validateRequired(fileMessage.getFileName(), "Nome do arquivo");
         Group group = getExistingGroup(groupName);

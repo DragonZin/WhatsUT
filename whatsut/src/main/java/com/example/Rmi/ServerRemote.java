@@ -3,6 +3,7 @@ package com.example.Rmi;
 import com.example.Models.FileMessage;
 import com.example.Models.Group;
 import com.example.Models.Message;
+import com.example.Models.TextMessage;
 import com.example.Models.User;
 
 import java.rmi.Remote;
@@ -24,9 +25,13 @@ public interface ServerRemote extends Remote {
 
     boolean deleteUserFromGroup(String groupName, String adminName, String userName) throws RemoteException;
 
-    boolean sendTextMessage(String groupName, String senderName, String content) throws RemoteException;
+    boolean sendPrivateTextMessage(String Sender, String Receiver, TextMessage textMessage) throws RemoteException;
+
+    boolean sendPrivateFileMessage(String Sender, String Receiver, FileMessage fileMessage) throws RemoteException;
+
+    boolean sendGroupTextMessage(String groupName, String senderName, TextMessage textMessage) throws RemoteException;
     
-    boolean sendFileMessage(String groupName, String senderName, FileMessage fileMessage) throws RemoteException;
+    boolean sendGroupFileMessage(String groupName, String senderName, FileMessage fileMessage) throws RemoteException;
 
     List<Message> getMessages(String groupName, String userName) throws RemoteException;
 
