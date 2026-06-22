@@ -24,7 +24,7 @@ public class ChatView {
     private final BorderPane root = new BorderPane();
     private final TextField messageField = new TextField();
 
-    public ChatView(ChatController controller, Consumer<Group> pendingRequestsAction) {
+    public ChatView(ChatController controller, Consumer<Group> pendingRequestsAction, Consumer<Group> membersAction) {
         root.getStyleClass().add("chat-root");
         Label title = new Label("Conversa");
         title.getStyleClass().add("chat-title");
@@ -43,7 +43,17 @@ public class ChatView {
                 pendingRequestsAction.accept(group);
             }
         });
-        HBox headerContent = new HBox(12, conversationDetails, pendingRequestsButton);
+        Button membersButton = new Button("Membros");
+        membersButton.getStyleClass().add("members-button");
+        membersButton.visibleProperty().bind(controller.selectedGroupActiveProperty());
+        membersButton.managedProperty().bind(controller.selectedGroupActiveProperty());
+        membersButton.setOnAction(event -> {
+            Group group = controller.selectedGroup();
+            if (group != null) {
+                membersAction.accept(group);
+            }
+        });
+        HBox headerContent = new HBox(12, conversationDetails, membersButton, pendingRequestsButton);
         HBox.setHgrow(conversationDetails, Priority.ALWAYS);
         headerContent.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
         root.setTop(headerContent);

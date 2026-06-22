@@ -62,6 +62,13 @@ public class RmiClientService implements AutoCloseable {
         return serverRemote.listGroups(requireCurrentUser());
     }
 
+    public List<User> listGroupUsers(String groupName) throws RemoteException {
+        if (groupName == null || groupName.isBlank()) {
+            throw new IllegalArgumentException("Informe o grupo.");
+        }
+        return serverRemote.listGroupUsers(requireCurrentUser(), groupName.trim());
+    }
+
     public Group createGroup(String groupName) throws RemoteException {
         return serverRemote.createGroup(groupName, requireCurrentUser());
     }

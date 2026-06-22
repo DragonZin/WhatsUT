@@ -3,6 +3,7 @@ package com.example.Ui.Controller;
 import com.example.Models.FileMessage;
 import com.example.Models.Group;
 import com.example.Models.Message;
+import com.example.Models.User;
 import com.example.Ui.Service.RmiClientService;
 import javafx.collections.FXCollections;
 import javafx.beans.property.ReadOnlyBooleanProperty;
@@ -17,6 +18,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.rmi.RemoteException;
+import java.util.List;
 
 public class ChatController {
     private final RmiClientService rmiClientService;
@@ -26,6 +28,7 @@ public class ChatController {
     private final SimpleStringProperty conversationTitle = new SimpleStringProperty("Conversa");
     private final SimpleStringProperty conversationSubtitle = new SimpleStringProperty("Selecione um usuario ou grupo para iniciar");
     private final SimpleBooleanProperty selectedGroupAdmin = new SimpleBooleanProperty(false);
+    private final SimpleBooleanProperty selectedGroupActive = new SimpleBooleanProperty(false);
 
     public ChatController(RmiClientService rmiClientService) {
         this.rmiClientService = rmiClientService;
@@ -45,6 +48,10 @@ public class ChatController {
 
     public ReadOnlyBooleanProperty selectedGroupAdminProperty() {
         return selectedGroupAdmin;
+    }
+
+    public ReadOnlyBooleanProperty selectedGroupActiveProperty() {
+        return selectedGroupActive;
     }
 
     public Group selectedGroup() {
@@ -77,6 +84,7 @@ public class ChatController {
         selectedGroup = null;
         selectedPrivateUser = null;
         selectedGroupAdmin.set(false);
+        selectedGroupActive.set(false);
         messages.clear();
         conversationTitle.set(title);
         conversationSubtitle.set(subtitle);
@@ -86,6 +94,7 @@ public class ChatController {
         selectedGroup = group;
         selectedPrivateUser = null;
         selectedGroupAdmin.set(group.getAdmin().GetName().equals(currentUserName()));
+        selectedGroupActive.set(true);
         conversationTitle.set(group.getName());
         conversationSubtitle.set("Grupo • " + group.getMembers().size() + " membros");
         refreshMessages();
@@ -95,6 +104,7 @@ public class ChatController {
         selectedPrivateUser = userName;
         selectedGroup = null;
         selectedGroupAdmin.set(false);
+        selectedGroupActive.set(false);
         conversationTitle.set(userName);
         conversationSubtitle.set("Conversa privada");
         refreshMessages();
@@ -108,6 +118,13 @@ public class ChatController {
         } else {
             messages.clear();
         }
+    }
+
+    public List<User> listSelectedGroupMembers() throws RemoteException {
+        if (selectedGroup == null) {
+            throw new IllegalStateException("Selecione um grupo.");
+        }
+        return rmiClientService.listGroupUsers(selectedGroup.getName());
     }
 
     public void appendGroupMessage(String groupName, Message message) {

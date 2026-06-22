@@ -228,3 +228,59 @@
     -fx-font-weight: bold;
     -fx-text-fill: #111b21;
 }
+
+.members-button {
+    -fx-background-color: #008069;
+    -fx-padding: 8 14;
+    -fx-font-size: 12px;
+}
+
+.group-members-dialog {
+    -fx-background-color: #f0f2f5;
+}
+
+.group-members-dialog > *.button-bar > *.container {
+    -fx-background-color: #f0f2f5;
+}
+
+.group-members-content {
+    -fx-padding: 8 2 4 2;
+    -fx-min-width: 360;
+}
+
+.group-members-title {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #111b21;
+}
+
+.group-members-list {
+    -fx-padding: 8 0 4 0;
+}
+
+.group-member-row {
+    -fx-alignment: center-left;
+    -fx-padding: 10 12;
+    -fx-background-color: white;
+    -fx-background-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(17,27,33,0.08), 5, 0.1, 0, 1);
+}
+
+.group-member-name {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #111b21;
+}
+
+.group-member-role, .group-member-admin {
+    -fx-font-size: 12px;
+}
+
+.group-member-role {
+    -fx-text-fill: #667781;
+}
+
+.group-member-admin {
+    -fx-text-fill: #008069;
+    -fx-font-weight: bold;
+}

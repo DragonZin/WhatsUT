@@ -78,7 +78,8 @@ public class MainApp extends Application {
         activeChatController = chatController;
         activeUsersController = usersController;
         ChatView chatView = new ChatView(chatController,
-                group -> showPendingRequestsDialog(stage, groupsController, usersController, group.getName()));
+                group -> showPendingRequestsDialog(stage, groupsController, usersController, group.getName()),
+                group -> showGroupMembersDialog(stage, chatController, group));
         BorderPane center = new BorderPane(chatView.root());
         Parent sidebar = conversationsSidebar(stage, callbackHandler, groupsController, usersController, chatController, center, chatView.root());
         configureCallbacks(callbackHandler, groupsController, chatController, usersController, () -> refreshAll(groupsController, usersController));
@@ -212,6 +213,52 @@ public class MainApp extends Application {
             }
         };
         refreshDialog[0].run();
+        dialog.show();
+    }
+
+    private void showGroupMembersDialog(Stage owner, ChatController chatController, Group group) {
+        Dialog<Void> dialog = new Dialog<>();
+        dialog.setTitle("Membros do grupo");
+        dialog.initOwner(owner);
+        dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
+        dialog.getDialogPane().getStylesheets().add(MainApp.class.getResource("/Styles/whatsut.css").toExternalForm());
+        dialog.getDialogPane().getStyleClass().add("group-members-dialog");
+
+        Label title = new Label(group.getName());
+        title.getStyleClass().add("group-members-title");
+        Label subtitle = new Label();
+        subtitle.getStyleClass().add("muted-label");
+        VBox rows = new VBox(8);
+        rows.getStyleClass().add("group-members-list");
+        Button refresh = new Button("Atualizar");
+        refresh.getStyleClass().add("secondary-button");
+        VBox content = new VBox(8, title, subtitle, rows, refresh);
+        content.getStyleClass().add("group-members-content");
+        dialog.getDialogPane().setContent(content);
+
+        Runnable reload = () -> {
+            try {
+                java.util.List<User> members = chatController.listSelectedGroupMembers();
+                subtitle.setText(members.size() + (members.size() == 1 ? " membro" : " membros"));
+                rows.getChildren().clear();
+                for (User member : members) {
+                    Label name = new Label(member.GetName());
+                    name.getStyleClass().add("group-member-name");
+                    Label role = new Label(member.GetName().equals(group.getAdmin().GetName()) ? "Administrador" : "Membro");
+                    role.getStyleClass().add(member.GetName().equals(group.getAdmin().GetName())
+                            ? "group-member-admin" : "group-member-role");
+                    VBox details = new VBox(2, name, role);
+                    HBox row = new HBox(details);
+                    row.getStyleClass().add("group-member-row");
+                    rows.getChildren().add(row);
+                }
+            } catch (Exception exception) {
+                ViewSupport.showError(exception);
+                dialog.close();
+            }
+        };
+        refresh.setOnAction(event -> reload.run());
+        reload.run();
         dialog.show();
     }
 
