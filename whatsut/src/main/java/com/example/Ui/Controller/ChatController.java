@@ -5,6 +5,8 @@ import com.example.Models.Group;
 import com.example.Models.Message;
 import com.example.Ui.Service.RmiClientService;
 import javafx.collections.FXCollections;
+import javafx.beans.property.ReadOnlyStringProperty;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.ObservableList;
 
 import java.io.ByteArrayInputStream;
@@ -19,6 +21,8 @@ public class ChatController {
     private final ObservableList<Message> messages = FXCollections.observableArrayList();
     private Group selectedGroup;
     private String selectedPrivateUser;
+    private final SimpleStringProperty conversationTitle = new SimpleStringProperty("Conversa");
+    private final SimpleStringProperty conversationSubtitle = new SimpleStringProperty("Selecione um usuario ou grupo para iniciar");
 
     public ChatController(RmiClientService rmiClientService) {
         this.rmiClientService = rmiClientService;
@@ -28,15 +32,39 @@ public class ChatController {
         return messages;
     }
 
+    public ReadOnlyStringProperty conversationTitleProperty() {
+        return conversationTitle;
+    }
+
+    public ReadOnlyStringProperty conversationSubtitleProperty() {
+        return conversationSubtitle;
+    }
+
+    public String currentUserName() {
+        return rmiClientService.getCurrentUser();
+    }
+
+    public void showPlaceholder(String title, String subtitle) {
+        selectedGroup = null;
+        selectedPrivateUser = null;
+        messages.clear();
+        conversationTitle.set(title);
+        conversationSubtitle.set(subtitle);
+    }
+
     public void selectGroup(Group group) throws RemoteException {
         selectedGroup = group;
         selectedPrivateUser = null;
+        conversationTitle.set(group.getName());
+        conversationSubtitle.set("Grupo • " + group.getMembers().size() + " membros");
         refreshMessages();
     }
 
     public void selectPrivateUser(String userName) throws RemoteException {
         selectedPrivateUser = userName;
         selectedGroup = null;
+        conversationTitle.set(userName);
+        conversationSubtitle.set("Conversa privada");
         refreshMessages();
     }
 

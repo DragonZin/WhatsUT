@@ -25,14 +25,24 @@ public class ChatView {
         root.getStyleClass().add("chat-root");
         Label title = new Label("Conversa");
         title.getStyleClass().add("chat-title");
+        title.textProperty().bind(controller.conversationTitleProperty());
         Label subtitle = new Label("Selecione um usuario ou grupo para iniciar");
         subtitle.getStyleClass().add("chat-subtitle");
+        subtitle.textProperty().bind(controller.conversationSubtitleProperty());
         root.setTop(new VBox(2, title, subtitle));
         root.getTop().getStyleClass().add("chat-header");
 
         ListView<com.example.Models.Message> messagesList = new ListView<>(controller.messages());
         messagesList.getStyleClass().add("message-list");
-        messagesList.setCellFactory(list -> ViewSupport.messageCell());
+        messagesList.setCellFactory(list -> ViewSupport.messageCell(controller.currentUserName(), fileMessage -> run(() -> {
+            DirectoryChooser chooser = new DirectoryChooser();
+            chooser.setTitle("Selecionar pasta para salvar");
+            File directory = chooser.showDialog(root.getScene().getWindow());
+            if (directory != null) {
+                java.nio.file.Path savedFile = controller.downloadFile(fileMessage, directory.toPath());
+                new Alert(Alert.AlertType.INFORMATION, "Arquivo salvo em: " + savedFile).showAndWait();
+            }
+        })));
         messageField.setPromptText("Digite uma mensagem");
         Button attachButton = new Button("Anexar");
         attachButton.setOnAction(event -> run(() -> {
@@ -43,23 +53,13 @@ public class ChatView {
                 controller.sendFile(file.toPath());
             }
         }));
-        Button downloadButton = new Button("Baixar");
-        downloadButton.setOnAction(event -> run(() -> {
-            DirectoryChooser chooser = new DirectoryChooser();
-            chooser.setTitle("Selecionar pasta para salvar");
-            File directory = chooser.showDialog(root.getScene().getWindow());
-            if (directory != null) {
-                java.nio.file.Path savedFile = controller.downloadFile(messagesList.getSelectionModel().getSelectedItem(), directory.toPath());
-                new Alert(Alert.AlertType.INFORMATION, "Arquivo salvo em: " + savedFile).showAndWait();
-            }
-        }));
         Button sendButton = new Button("Enviar");
         sendButton.setDefaultButton(true);
         sendButton.setOnAction(event -> run(() -> {
             controller.sendMessage(messageField.getText());
             messageField.clear();
         }));
-        HBox composer = new HBox(10, attachButton, messageField, sendButton, downloadButton);
+        HBox composer = new HBox(10, attachButton, messageField, sendButton);
         composer.getStyleClass().add("composer");
         composer.setPadding(new Insets(12, 14, 12, 14));
         HBox.setHgrow(messageField, Priority.ALWAYS);

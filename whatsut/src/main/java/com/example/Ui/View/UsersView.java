@@ -16,8 +16,8 @@ public class UsersView {
 
     public UsersView(UsersController controller, Consumer<String> selectionHandler) {
         root.getStyleClass().add("sidebar");
-        ListView<User> usersList = new ListView<>(controller.onlineUsers());
-        usersList.setCellFactory(list -> ViewSupport.userCell());
+        ListView<User> usersList = new ListView<>(controller.users());
+        usersList.setCellFactory(list -> ViewSupport.userCell(user -> controller.isOnline(user.GetName())));
         usersList.getSelectionModel().selectedItemProperty().addListener((obs, old, user) -> {
             if (user != null) {
                 selectionHandler.accept(user.GetName());
@@ -27,12 +27,12 @@ public class UsersView {
         refreshButton.setMaxWidth(Double.MAX_VALUE);
         refreshButton.setOnAction(event -> {
             try {
-                controller.refreshOnlineUsers();
+                controller.refreshUsers();
             } catch (Exception exception) {
                 ViewSupport.showError(exception);
             }
         });
-        VBox header = new VBox(8, styledTitle("Usuarios online"), refreshButton);
+        VBox header = new VBox(8, styledTitle("Usuarios"), refreshButton);
         header.getStyleClass().add("sidebar-header");
         VBox.setVgrow(usersList, Priority.ALWAYS);
         root.getChildren().addAll(header, usersList);
