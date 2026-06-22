@@ -1,186 +1,152 @@
 # WhatsUT
 
-WhatsUT é um protótipo de sistema de mensagens em Java que usa **Java RMI** para comunicação entre cliente e servidor. O projeto implementa funcionalidades parecidas com uma aplicação de chat: cadastro e autenticação de usuários, criação de grupos, pedidos de entrada, mensagens em grupo, mensagens privadas, envio de arquivos e notificações assíncronas para clientes conectados.
+Aplicação acadêmica de mensagens distribuídas, construída em Java. O projeto usa **Java RMI** para a comunicação entre um servidor central e clientes com interface gráfica em **JavaFX**.
+
+O WhatsUT permite criar contas, conversar em privado ou em grupo e receber atualizações em tempo real enquanto os usuários estão conectados.
 
 ## Funcionalidades
 
-- Cadastro de usuários com senha armazenada como hash SHA-256.
-- Login e logout de usuários autenticados.
-- Criação de grupos com administrador.
-- Pedido de entrada em grupos e aprovação pelo administrador.
-- Remoção de membros de grupos.
-- Envio e consulta de mensagens de texto em grupos.
-- Envio e consulta de mensagens privadas entre usuários.
-- Envio de arquivos para grupos ou conversas privadas.
-- Listagem de grupos, membros de um grupo e usuários autenticados.
-- Callbacks RMI para notificar clientes sobre:
-  - atualização da lista de grupos;
-  - novos pedidos de entrada;
-  - novas mensagens em grupo;
-  - novas mensagens privadas.
-- Cliente de console com menu interativo e rotina de teste automático.
+- Cadastro, login e logout de usuários.
+- Listagem de usuários cadastrados e usuários online.
+- Conversas privadas com histórico de mensagens.
+- Criação de grupos com nome, descrição e participantes iniciais.
+- Solicitação, aprovação, recusa e cancelamento de entrada em grupos.
+- Administração de membros: o administrador pode remover participantes; ao sair, ele encerra o grupo.
+- Envio de mensagens de texto e arquivos em conversas privadas e grupos.
+- Contadores de mensagens não lidas.
+- Callbacks RMI assíncronos para atualizar grupos, solicitações e mensagens sem recarregar a aplicação manualmente.
 
-## Tecnologias utilizadas
+## Tecnologias
 
 - Java 21
+- Maven 3.9+
 - Java RMI
-- Maven
-- Docker
-- Docker Compose
+- JavaFX 21
 
-## Estrutura do projeto
+## Arquitetura
+
+```text
+Cliente JavaFX                         Servidor RMI
+┌──────────────────────┐              ┌─────────────────────────┐
+│ MainApp e Views      │              │ Server                  │
+│ Controllers          │── RMI ──────▶│ ServerService           │
+│ RmiClientService     │              │ usuários, grupos e      │
+│ ClientService        │◀─ callback ─│ mensagens em memória    │
+└──────────────────────┘              └─────────────────────────┘
+```
+
+- `ServerRemote` define as operações chamadas pelos clientes.
+- `ClientRemote` define os callbacks usados pelo servidor para avisar sobre mudanças e novas mensagens.
+- `ServerService` mantém os dados em memória, autenticação e regras de grupos.
+- `RmiClientService` é a camada de acesso do cliente JavaFX ao servidor remoto.
+
+## Estrutura do repositório
 
 ```text
 .
-├── docker-compose.yml          # Orquestra o serviço do servidor WhatsUT
-├── README.md                   # Documentação do projeto
-└── whatsut
-    ├── Dockerfile              # Build e execução do servidor em container
-    ├── pom.xml                 # Configuração Maven
-    └── src
-        ├── main/java/com/example
-        │   ├── Server.java     # Inicialização do servidor RMI
-        │   ├── Models          # Entidades do domínio
-        │   ├── Rmi             # Interfaces remotas
-        │   ├── Service         # Implementações do servidor e callback do cliente
-        │   └── Utils           # Utilitários
-        └── test/java/Client.java # Cliente de console para testar a aplicação
+├── README.md
+└── whatsut/
+    ├── pom.xml
+    └── src/
+        ├── main/
+        │   ├── java/com/example/
+        │   │   ├── Server.java          # Inicializa o registro e o serviço RMI
+        │   │   ├── Models/              # Usuários, grupos e mensagens
+        │   │   ├── Rmi/                 # Contratos remotos
+        │   │   ├── Service/             # Serviços de servidor e callbacks
+        │   │   └── Ui/                  # Aplicação JavaFX, views e controllers
+        │   └── resources/Styles/        # Estilos da interface
+        └── test/java/                   # Cliente de console auxiliar
 ```
 
-## Requisitos
+## Pré-requisitos
 
-Para executar localmente:
+Instale:
 
-- JDK 21 ou superior
-- Maven 3.9 ou superior
+- JDK 21 ou superior;
+- Maven 3.9 ou superior.
 
-Para executar com Docker:
-
-- Docker
-- Docker Compose
-
-## Como executar com Docker Compose
-
-Na raiz do repositório, execute:
+Verifique a instalação:
 
 ```bash
-docker compose up --build
+java -version
+mvn -version
 ```
 
-O servidor RMI será iniciado no endereço padrão:
+## Como executar
+
+Abra dois terminais na raiz do repositório.
+
+### 1. Inicie o servidor
+
+No primeiro terminal:
+
+```bash
+cd whatsut
+mvn clean package
+java -jar target/whatsut-1.0-SNAPSHOT.jar
+```
+
+O servidor cria o registro RMI e publica o serviço em:
 
 ```text
 rmi://localhost:1099/WhatsUT
 ```
 
-> Observação: se o cliente for executado fora do container e houver problemas de hostname do RMI, configure a variável `RMI_HOSTNAME` para o endereço acessível pelo cliente.
+### 2. Inicie o cliente gráfico
 
-## Como executar localmente
-
-### 1. Compilar o projeto
-
-Entre na pasta do projeto Maven:
+No segundo terminal:
 
 ```bash
 cd whatsut
-mvn clean package
+mvn javafx:run
 ```
 
-### 2. Iniciar o servidor
+Cadastre um usuário na tela inicial e faça login. Para testar a troca de mensagens, abra um segundo cliente e entre com outra conta.
 
-```bash
+## Conexão a um servidor remoto
+
+Por padrão, o cliente procura `localhost:1099/WhatsUT`. É possível alterar o endereço por variáveis de ambiente:
+
+| Variável | Padrão | Descrição |
+| --- | --- | --- |
+| `WHATSUT_HOST` | `localhost` | Host ou IP do servidor RMI |
+| `WHATSUT_RMI_PORT` | `1099` | Porta do registro RMI |
+| `WHATSUT_SERVICE_NAME` | `WhatsUT` | Nome do serviço registrado |
+
+O servidor anuncia `localhost` por padrão. Ao executá-lo em outra máquina, defina `RMI_HOSTNAME` com um IP ou hostname acessível pelos clientes.
+
+No PowerShell, por exemplo:
+
+```powershell
+$env:RMI_HOSTNAME = "192.168.0.10"
 java -jar target/whatsut-1.0-SNAPSHOT.jar
 ```
 
-Por padrão, o servidor registra o serviço RMI `WhatsUT` na porta `1099`.
+No cliente que se conectará a esse servidor:
 
-Também é possível configurar o hostname anunciado pelo RMI:
-
-```bash
-RMI_HOSTNAME=localhost java -jar target/whatsut-1.0-SNAPSHOT.jar
+```powershell
+$env:WHATSUT_HOST = "192.168.0.10"
+mvn javafx:run
 ```
-
-### 3. Executar o cliente de console
-
-Em outro terminal, ainda dentro da pasta `whatsut`, execute:
-
-```bash
-mvn test-compile exec:java -Dexec.mainClass=Client
-```
-
-Caso prefira executar a classe manualmente, compile os testes e use o classpath gerado pelo Maven.
-
-O cliente aceita, nessa ordem, os argumentos opcionais:
-
-1. host do servidor;
-2. porta RMI;
-3. nome do serviço RMI.
-
-Exemplo:
-
-```bash
-mvn test-compile exec:java -Dexec.mainClass=Client -Dexec.args="localhost 1099 WhatsUT"
-```
-
-Também é possível configurar esses valores por variáveis de ambiente:
-
-```bash
-WHATSUT_HOST=localhost \
-WHATSUT_RMI_PORT=1099 \
-WHATSUT_SERVICE_NAME=WhatsUT \
-mvn test-compile exec:java -Dexec.mainClass=Client
-```
-
-## Menu do cliente
-
-Antes do login, o cliente permite:
-
-- registrar usuário;
-- fazer login;
-- executar teste automático;
-- sair.
-
-Após o login, o menu permite criar grupos, listar grupos, pedir entrada, aprovar membros, enviar e visualizar mensagens, enviar arquivos, listar usuários autenticados, remover membros e fazer logout.
-
-## Teste automático
-
-O cliente possui a opção **Teste automatico**, que cria usuários e grupos temporários, executa operações de mensagens, arquivos, listagens e remoção de membros por 5 ciclos. Essa opção é útil para validar rapidamente o fluxo principal da aplicação.
-
-## API RMI principal
-
-A interface `ServerRemote` expõe operações para:
-
-- `registerUser` — cadastrar usuário;
-- `login` e `logout` — controlar sessão;
-- `createGroup` — criar grupos;
-- `requestJoinGroup` e `approvePendingMember` — gerenciar pedidos de entrada;
-- `deleteUserFromGroup` — remover membros;
-- `sendPrivateTextMessage` e `sendPrivateFileMessage` — enviar mensagens privadas;
-- `sendGroupTextMessage` e `sendGroupFileMessage` — enviar mensagens para grupos;
-- `getMessages` e `getPrivateMessages` — consultar histórico;
-- `listGroups`, `listGroupUsers`, `listUsers` e `listAuthenticatedUsers` — listar dados do sistema.
-
-A interface `ClientRemote` define callbacks usados pelo servidor para atualizar clientes conectados.
-
-## Observações importantes
-
-- Os dados são mantidos em memória; ao reiniciar o servidor, usuários, grupos e mensagens são perdidos.
-- O projeto é um protótipo acadêmico/experimental e não implementa persistência, criptografia de ponta a ponta nem controle avançado de permissões.
-- Arquivos são transportados como arrays de bytes em objetos RMI.
-- O servidor usa mapas concorrentes para armazenar usuários, sessões, grupos e conversas privadas durante a execução.
 
 ## Comandos úteis
 
 ```bash
-# Compilar e executar testes Maven
-cd whatsut && mvn test
+# Compilar e executar as verificações Maven
+cd whatsut
+mvn test
 
-# Gerar pacote sem executar testes
-cd whatsut && mvn clean package -DskipTests
+# Gerar o JAR sem executar testes
+mvn clean package -DskipTests
 
-# Subir o servidor em container
-docker compose up --build
-
-# Parar e remover containers
-docker compose down
+# Executar a interface JavaFX
+mvn javafx:run
 ```
+
+## Limitações conhecidas
+
+- Os dados ficam apenas em memória: ao reiniciar o servidor, contas, grupos e mensagens são perdidos.
+- As senhas são armazenadas como hash SHA-256, mas o projeto não é destinado a uso em produção.
+- Não há criptografia de ponta a ponta, persistência em banco de dados nem controle avançado de permissões.
+- Arquivos são enviados integralmente como arrays de bytes via RMI; arquivos grandes podem afetar a memória e a rede.
