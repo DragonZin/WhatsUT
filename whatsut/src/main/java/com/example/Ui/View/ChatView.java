@@ -3,6 +3,7 @@ package com.example.Ui.View;
 import com.example.Ui.Controller.ChatController;
 import javafx.geometry.Insets;
 import javafx.scene.Parent;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
@@ -11,6 +12,10 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import javafx.stage.DirectoryChooser;
+import javafx.stage.FileChooser;
+
+import java.io.File;
 
 public class ChatView {
     private final BorderPane root = new BorderPane();
@@ -29,13 +34,32 @@ public class ChatView {
         messagesList.getStyleClass().add("message-list");
         messagesList.setCellFactory(list -> ViewSupport.messageCell());
         messageField.setPromptText("Digite uma mensagem");
+        Button attachButton = new Button("Anexar");
+        attachButton.setOnAction(event -> run(() -> {
+            FileChooser chooser = new FileChooser();
+            chooser.setTitle("Selecionar arquivo para enviar");
+            File file = chooser.showOpenDialog(root.getScene().getWindow());
+            if (file != null) {
+                controller.sendFile(file.toPath());
+            }
+        }));
+        Button downloadButton = new Button("Baixar");
+        downloadButton.setOnAction(event -> run(() -> {
+            DirectoryChooser chooser = new DirectoryChooser();
+            chooser.setTitle("Selecionar pasta para salvar");
+            File directory = chooser.showDialog(root.getScene().getWindow());
+            if (directory != null) {
+                java.nio.file.Path savedFile = controller.downloadFile(messagesList.getSelectionModel().getSelectedItem(), directory.toPath());
+                new Alert(Alert.AlertType.INFORMATION, "Arquivo salvo em: " + savedFile).showAndWait();
+            }
+        }));
         Button sendButton = new Button("Enviar");
         sendButton.setDefaultButton(true);
         sendButton.setOnAction(event -> run(() -> {
             controller.sendMessage(messageField.getText());
             messageField.clear();
         }));
-        HBox composer = new HBox(10, messageField, sendButton);
+        HBox composer = new HBox(10, attachButton, messageField, sendButton, downloadButton);
         composer.getStyleClass().add("composer");
         composer.setPadding(new Insets(12, 14, 12, 14));
         HBox.setHgrow(messageField, Priority.ALWAYS);

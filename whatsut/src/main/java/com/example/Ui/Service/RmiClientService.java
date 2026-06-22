@@ -1,5 +1,6 @@
 package com.example.Ui.Service;
 
+import com.example.Models.FileMessage;
 import com.example.Models.Group;
 import com.example.Models.Message;
 import com.example.Models.TextMessage;
@@ -7,6 +8,8 @@ import com.example.Models.User;
 import com.example.Rmi.ServerRemote;
 import com.example.Service.ClientService;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.rmi.Naming;
 import java.rmi.RemoteException;
 import java.util.List;
@@ -87,6 +90,16 @@ public class RmiClientService implements AutoCloseable {
         serverRemote.sendPrivateTextMessage(requireCurrentUser(), receiver, new TextMessage(content, sender()));
     }
 
+    public void sendGroupFile(String groupName, Path filePath) throws RemoteException {
+        FileMessage fileMessage = createFileMessage(filePath);
+        serverRemote.sendGroupFileMessage(groupName, requireCurrentUser(), fileMessage);
+    }
+
+    public void sendPrivateFile(String receiver, Path filePath) throws RemoteException {
+        FileMessage fileMessage = createFileMessage(filePath);
+        serverRemote.sendPrivateFileMessage(requireCurrentUser(), receiver, fileMessage);
+    }
+
     public String getCurrentUser() {
         return currentUser;
     }
@@ -101,6 +114,18 @@ public class RmiClientService implements AutoCloseable {
             clientService.close();
             clientService = null;
             currentUser = null;
+        }
+    }
+
+    private FileMessage createFileMessage(Path filePath) throws RemoteException {
+        if (filePath == null) {
+            throw new RemoteException("Selecione um arquivo.");
+        }
+
+        try {
+            return new FileMessage(filePath.getFileName().toString(), Files.readAllBytes(filePath), sender());
+        } catch (Exception exception) {
+            throw new RemoteException("Nao foi possivel ler o arquivo selecionado.", exception);
         }
     }
 

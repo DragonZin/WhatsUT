@@ -168,7 +168,7 @@ public class ServerService extends UnicastRemoteObject implements ServerRemote {
     @Override
     public synchronized boolean sendPrivateFileMessage(String Sender, String Receiver, FileMessage fileMessage) throws RemoteException {
         isAuthenticated(Sender);
-        validateRequired(fileMessage.getFileName(), "Nome do arquivo");
+        validateFileMessage(fileMessage);
         getExistingUser(Receiver);
 
         ConversationKey key = new ConversationKey(Sender, Receiver);
@@ -199,7 +199,7 @@ public class ServerService extends UnicastRemoteObject implements ServerRemote {
     @Override
     public synchronized boolean sendGroupFileMessage(String groupName, String senderName, FileMessage fileMessage) throws RemoteException {
         isAuthenticated(senderName);
-        validateRequired(fileMessage.getFileName(), "Nome do arquivo");
+        validateFileMessage(fileMessage);
         Group group = getExistingGroup(groupName);
         User sender = getExistingUser(senderName);
 
@@ -383,6 +383,17 @@ public class ServerService extends UnicastRemoteObject implements ServerRemote {
     private static void validateRequired(String value, String fieldName) throws RemoteException {
         if (value == null || value.isBlank()) {
             throw new RemoteException(fieldName + " e obrigatorio.");
+        }
+    }
+
+    private static void validateFileMessage(FileMessage fileMessage) throws RemoteException {
+        if (fileMessage == null) {
+            throw new RemoteException("Arquivo e obrigatorio.");
+        }
+
+        validateRequired(fileMessage.getFileName(), "Nome do arquivo");
+        if (fileMessage.getSize() == 0) {
+            throw new RemoteException("Arquivo vazio nao pode ser enviado.");
         }
     }
 

@@ -16,7 +16,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Scanner;
 
-public class Client {
+public class ConsoleClient {
     private static final String DEFAULT_HOST = "localhost";
     private static final int DEFAULT_RMI_PORT = 1099;
     private static final String DEFAULT_SERVICE_NAME = "WhatsUT";
@@ -31,7 +31,7 @@ public class Client {
     private String currentUser;
     private ClientService clientService;
 
-    public Client(ServerRemote remote) {
+    public ConsoleClient(ServerRemote remote) {
         this.remote = remote;
     }
 
@@ -43,7 +43,7 @@ public class Client {
 
         try {
             ServerRemote remote = (ServerRemote) Naming.lookup(rmiUrl);
-            new Client(remote).run();
+            new ConsoleClient(remote).run();
         } catch (Exception exception) {
             System.err.println("Nao foi possivel iniciar o cliente: " + exception.getMessage());
         }
@@ -266,8 +266,8 @@ public class Client {
                 safeRun("listar membros " + n, () -> { printUsers(remote.listGroupUsers(admin, group)); return null; });
                 safeRun("mensagem grupo texto " + n, () -> remote.sendGroupTextMessage(group, admin, new TextMessage("Mensagem automatica " + n, new User(admin, ""))));
                 safeRun("mensagem privada texto " + n, () -> remote.sendPrivateTextMessage(admin, member, new TextMessage("Privada automatica " + n, new User(admin, ""))));
-                safeRun("arquivo grupo " + n, () -> remote.sendGroupFileMessage(group, admin, new FileMessage("grupo-auto-" + n + ".txt", toByteObjects(("arquivo grupo " + n).getBytes()), new User(admin, ""))));
-                safeRun("arquivo privado " + n, () -> remote.sendPrivateFileMessage(admin, member, new FileMessage("privado-auto-" + n + ".txt", toByteObjects(("arquivo privado " + n).getBytes()), new User(admin, ""))));
+                safeRun("arquivo grupo " + n, () -> remote.sendGroupFileMessage(group, admin, new FileMessage("grupo-auto-" + n + ".txt", ("arquivo grupo " + n).getBytes(), new User(admin, ""))));
+                safeRun("arquivo privado " + n, () -> remote.sendPrivateFileMessage(admin, member, new FileMessage("privado-auto-" + n + ".txt", ("arquivo privado " + n).getBytes(), new User(admin, ""))));
                 safeRun("ver mensagens grupo " + n, () -> { printMessages(remote.getMessages(group, admin)); return null; });
                 safeRun("ver mensagens privadas " + n, () -> { printMessages(remote.getPrivateMessages(admin, member)); return null; });
                 safeRun("listar autenticados " + n, () -> { printUsers(remote.listAuthenticatedUsers(admin)); return null; });
@@ -298,18 +298,10 @@ public class Client {
         String pathValue = readRequired("Caminho do arquivo: ");
         try {
             Path path = Path.of(pathValue);
-            return new FileMessage(path.getFileName().toString(), toByteObjects(Files.readAllBytes(path)), new User(currentUser, ""));
+            return new FileMessage(path.getFileName().toString(), Files.readAllBytes(path), new User(currentUser, ""));
         } catch (IOException exception) {
             throw new IllegalArgumentException("Nao foi possivel ler o arquivo: " + exception.getMessage(), exception);
         }
-    }
-
-    private static Byte[] toByteObjects(byte[] bytes) {
-        Byte[] objects = new Byte[bytes.length];
-        for (int i = 0; i < bytes.length; i++) {
-            objects[i] = bytes[i];
-        }
-        return objects;
     }
 
     private void printGroups(List<Group> groups) {
