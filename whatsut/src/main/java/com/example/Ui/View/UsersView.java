@@ -15,6 +15,7 @@ public class UsersView {
     private final VBox root = new VBox(8);
 
     public UsersView(UsersController controller, Consumer<String> selectionHandler) {
+        root.getStyleClass().add("sidebar");
         ListView<User> usersList = new ListView<>(controller.onlineUsers());
         usersList.setCellFactory(list -> ViewSupport.userCell());
         usersList.getSelectionModel().selectedItemProperty().addListener((obs, old, user) -> {
@@ -23,6 +24,7 @@ public class UsersView {
             }
         });
         Button refreshButton = new Button("Atualizar online");
+        refreshButton.setMaxWidth(Double.MAX_VALUE);
         refreshButton.setOnAction(event -> {
             try {
                 controller.refreshOnlineUsers();
@@ -30,11 +32,19 @@ public class UsersView {
                 ViewSupport.showError(exception);
             }
         });
+        VBox header = new VBox(8, styledTitle("Usuarios online"), refreshButton);
+        header.getStyleClass().add("sidebar-header");
         VBox.setVgrow(usersList, Priority.ALWAYS);
-        root.getChildren().addAll(new Label("Usuarios online"), refreshButton, usersList);
+        root.getChildren().addAll(header, usersList);
     }
 
     public Parent root() {
         return root;
+    }
+
+    private static Label styledTitle(String text) {
+        Label label = new Label(text);
+        label.getStyleClass().add("section-title");
+        return label;
     }
 }

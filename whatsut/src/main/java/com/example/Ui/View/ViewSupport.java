@@ -5,8 +5,12 @@ import com.example.Models.Group;
 import com.example.Models.Message;
 import com.example.Models.TextMessage;
 import com.example.Models.User;
+import javafx.geometry.Pos;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -21,7 +25,7 @@ public final class ViewSupport {
             @Override
             protected void updateItem(Group group, boolean empty) {
                 super.updateItem(group, empty);
-                setText(empty || group == null ? null : "%s (admin: %s, membros: %d, pendentes: %d)".formatted(
+                setText(empty || group == null ? null : "💬 %s\nAdmin: %s • membros: %d • pendentes: %d".formatted(
                         group.getName(), group.getAdmin().GetName(), group.getMembers().size(), group.getPendingMembers().size()));
             }
         };
@@ -32,7 +36,7 @@ public final class ViewSupport {
             @Override
             protected void updateItem(User user, boolean empty) {
                 super.updateItem(user, empty);
-                setText(empty || user == null ? null : user.GetName());
+                setText(empty || user == null ? null : "🟢 " + user.GetName());
             }
         };
     }
@@ -42,7 +46,12 @@ public final class ViewSupport {
             @Override
             protected void updateItem(Message message, boolean empty) {
                 super.updateItem(message, empty);
-                setText(empty || message == null ? null : formatMessage(message));
+                if (empty || message == null) {
+                    setGraphic(null);
+                    return;
+                }
+                setText(null);
+                setGraphic(messageBubble(message));
             }
         };
     }
@@ -62,15 +71,29 @@ public final class ViewSupport {
         alert.showAndWait();
     }
 
-    private static String formatMessage(Message message) {
-        String sender = message.getSender().GetName();
-        String time = FORMATTER.format(message.getTimestamp());
+    private static HBox messageBubble(Message message) {
+        Label sender = new Label(message.getSender().GetName());
+        sender.getStyleClass().add("message-sender");
+        Label content = new Label(messageContent(message));
+        content.getStyleClass().add("message-content");
+        content.setMaxWidth(520);
+        Label time = new Label(FORMATTER.format(message.getTimestamp()));
+        time.getStyleClass().add("message-time");
+        VBox bubble = new VBox(3, sender, content, time);
+        bubble.getStyleClass().add("message-bubble");
+        HBox wrapper = new HBox(bubble);
+        wrapper.setAlignment(Pos.CENTER_RIGHT);
+        wrapper.setMaxWidth(Double.MAX_VALUE);
+        return wrapper;
+    }
+
+    private static String messageContent(Message message) {
         if (message instanceof TextMessage textMessage) {
-            return "[%s] %s: %s".formatted(time, sender, textMessage.getContent());
+            return textMessage.getContent();
         }
         if (message instanceof FileMessage fileMessage) {
-            return "[%s] %s enviou arquivo: %s".formatted(time, sender, fileMessage.getFileName());
+            return "📎 Arquivo: " + fileMessage.getFileName();
         }
-        return "[%s] %s enviou uma mensagem.".formatted(time, sender);
+        return "Mensagem recebida.";
     }
 }

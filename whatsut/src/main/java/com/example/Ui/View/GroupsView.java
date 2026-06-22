@@ -17,19 +17,24 @@ public class GroupsView {
     private final ListView<Group> groupsList = new ListView<>();
 
     public GroupsView(GroupsController controller, Consumer<Group> selectionHandler) {
+        root.getStyleClass().add("sidebar");
         TextField groupNameField = new TextField();
         groupNameField.setPromptText("nome do grupo");
         Button createButton = new Button("Criar");
         Button joinButton = new Button("Entrar");
         Button refreshButton = new Button("Atualizar");
+        refreshButton.getStyleClass().add("secondary-button");
         groupsList.setItems(controller.groups());
         groupsList.setCellFactory(list -> ViewSupport.groupCell());
         groupsList.getSelectionModel().selectedItemProperty().addListener((obs, old, group) -> selectionHandler.accept(group));
         createButton.setOnAction(event -> run(() -> controller.createGroup(groupNameField.getText())));
         joinButton.setOnAction(event -> run(() -> controller.joinGroup(groupsList.getSelectionModel().getSelectedItem())));
         refreshButton.setOnAction(event -> run(controller::refreshGroups));
+        HBox actions = new HBox(8, createButton, joinButton, refreshButton);
+        VBox header = new VBox(10, groupNameField, actions);
+        header.getStyleClass().add("sidebar-header");
         VBox.setVgrow(groupsList, Priority.ALWAYS);
-        root.getChildren().addAll(new HBox(8, groupNameField, createButton, joinButton, refreshButton), groupsList);
+        root.getChildren().addAll(header, groupsList);
     }
 
     public Parent root() {

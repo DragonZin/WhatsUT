@@ -7,31 +7,44 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
 
 public class LoginView {
-    private final GridPane root = new GridPane();
+    private final VBox root = new VBox();
     private final TextField userNameField = new TextField();
     private final PasswordField passwordField = new PasswordField();
 
     public LoginView(LoginController controller) {
+        root.getStyleClass().add("login-root");
         root.setPadding(new Insets(24));
-        root.setHgap(8);
-        root.setVgap(12);
+
+        VBox card = new VBox(16);
+        card.getStyleClass().add("login-card");
+
+        Label title = new Label("WhatsUT");
+        title.getStyleClass().add("app-title");
+        Label subtitle = new Label("Converse com grupos e usuarios em tempo real");
+        subtitle.getStyleClass().add("muted-label");
+
         userNameField.setPromptText("usuario");
         passwordField.setPromptText("password");
         Button registerButton = new Button("Registar");
         Button loginButton = new Button("Entrar");
+        registerButton.getStyleClass().add("secondary-button");
+        registerButton.setMaxWidth(Double.MAX_VALUE);
+        loginButton.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(registerButton, Priority.ALWAYS);
+        HBox.setHgrow(loginButton, Priority.ALWAYS);
         registerButton.setOnAction(event -> run(() -> {
             controller.register(userNameField.getText(), passwordField.getText());
             ViewSupport.showInfo("Usuario registado.");
         }));
         loginButton.setDefaultButton(true);
         loginButton.setOnAction(event -> run(() -> controller.login(userNameField.getText(), passwordField.getText())));
-        root.addRow(0, new Label("Usuario"), userNameField);
-        root.addRow(1, new Label("Password"), passwordField);
-        root.add(new HBox(8, registerButton, loginButton), 1, 2);
+        card.getChildren().addAll(title, subtitle, userNameField, passwordField, new HBox(10, registerButton, loginButton));
+        root.getChildren().add(card);
     }
 
     public Parent root() {

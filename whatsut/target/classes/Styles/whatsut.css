@@ -1,0 +1,162 @@
+.root {
+    -fx-font-family: "Inter", "Segoe UI", "Arial", sans-serif;
+    -fx-background-color: #e5ddd5;
+    -whatsut-green: #00a884;
+    -whatsut-dark-green: #008069;
+    -whatsut-teal: #075e54;
+    -whatsut-bubble: #dcf8c6;
+    -whatsut-panel: #f0f2f5;
+    -whatsut-text: #111b21;
+    -whatsut-muted: #667781;
+}
+
+.login-root {
+    -fx-background-color: linear-gradient(to bottom, #00a884 0%, #00a884 36%, #e5ddd5 36%, #e5ddd5 100%);
+    -fx-alignment: center;
+}
+
+.login-card {
+    -fx-background-color: white;
+    -fx-background-radius: 18;
+    -fx-effect: dropshadow(gaussian, rgba(17,27,33,0.18), 24, 0.2, 0, 8);
+    -fx-padding: 30;
+    -fx-max-width: 360;
+}
+
+.app-title {
+    -fx-font-size: 27px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #075e54;
+}
+
+.section-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #111b21;
+}
+
+.sidebar, .chat-root {
+    -fx-background-color: #f0f2f5;
+}
+
+.chat-root {
+    -fx-border-color: transparent transparent transparent #d1d7db;
+}
+
+.chat-header, .sidebar-header {
+    -fx-background-color: #f0f2f5;
+    -fx-padding: 14 16;
+    -fx-border-color: transparent transparent #d1d7db transparent;
+}
+
+.chat-title {
+    -fx-font-size: 17px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #111b21;
+}
+
+.chat-subtitle, .muted-label {
+    -fx-text-fill: #667781;
+    -fx-font-size: 12px;
+}
+
+.message-list {
+    -fx-background-color: #e5ddd5;
+    -fx-background-insets: 0;
+    -fx-padding: 16;
+}
+
+.message-list .list-cell {
+    -fx-background-color: transparent;
+    -fx-padding: 4 10;
+}
+
+.message-bubble {
+    -fx-background-color: #dcf8c6;
+    -fx-background-radius: 14 14 2 14;
+    -fx-padding: 9 12 7 12;
+    -fx-effect: dropshadow(gaussian, rgba(17,27,33,0.10), 4, 0.2, 0, 1);
+}
+
+.message-sender {
+    -fx-text-fill: #008069;
+    -fx-font-weight: bold;
+    -fx-font-size: 12px;
+}
+
+.message-content {
+    -fx-text-fill: #111b21;
+    -fx-font-size: 14px;
+    -fx-wrap-text: true;
+}
+
+.message-time {
+    -fx-text-fill: #667781;
+    -fx-font-size: 10px;
+}
+
+.composer {
+    -fx-background-color: #f0f2f5;
+    -fx-padding: 12 14;
+    -fx-alignment: center;
+}
+
+.text-field, .password-field {
+    -fx-background-color: white;
+    -fx-background-radius: 22;
+    -fx-border-color: transparent;
+    -fx-padding: 10 16;
+    -fx-prompt-text-fill: #8696a0;
+}
+
+.button {
+    -fx-background-color: #00a884;
+    -fx-background-radius: 20;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-padding: 9 18;
+    -fx-cursor: hand;
+}
+
+.button:hover {
+    -fx-background-color: #008069;
+}
+
+.secondary-button {
+    -fx-background-color: transparent;
+    -fx-border-color: #00a884;
+    -fx-border-radius: 20;
+    -fx-text-fill: #008069;
+}
+
+.list-view {
+    -fx-background-color: white;
+    -fx-background-insets: 0;
+    -fx-border-color: transparent;
+}
+
+.list-view .list-cell {
+    -fx-padding: 12 14;
+    -fx-background-color: white;
+    -fx-border-color: transparent transparent #f0f2f5 transparent;
+    -fx-text-fill: #111b21;
+}
+
+.list-view .list-cell:selected {
+    -fx-background-color: #e9edef;
+    -fx-text-fill: #111b21;
+}
+
+.tab-pane .tab-header-area .tab-header-background {
+    -fx-background-color: #f0f2f5;
+}
+
+.tab-pane .tab {
+    -fx-background-color: transparent;
+    -fx-padding: 8 18;
+}
+
+.tab-pane .tab:selected {
+    -fx-border-color: transparent transparent #00a884 transparent;
+    -fx-border-width: 0 0 3 0;
+}

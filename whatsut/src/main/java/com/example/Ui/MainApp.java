@@ -13,6 +13,7 @@ import com.example.Ui.View.LoginView;
 import com.example.Ui.View.ViewSupport;
 
 import javafx.application.Application;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.SplitPane;
@@ -31,7 +32,7 @@ public class MainApp extends Application {
             LoginController loginController = new LoginController(rmiClientService);
             loginController.onLoginSuccess(userName -> showMainScene(stage, callbackHandler));
             stage.setTitle("WhatsUT");
-            stage.setScene(new Scene(new LoginView(loginController).root(), 420, 220));
+            stage.setScene(styledScene(new LoginView(loginController).root(), 480, 420));
             stage.show();
         } catch (Exception exception) {
             ViewSupport.showError(exception);
@@ -59,7 +60,13 @@ public class MainApp extends Application {
         sideTabs.getTabs().forEach(tab -> tab.setClosable(false));
         SplitPane splitPane = new SplitPane(sideTabs, chatView.root());
         splitPane.setDividerPositions(0.36);
-        stage.setScene(new Scene(splitPane, 980, 640));
+        stage.setScene(styledScene(splitPane, 1040, 680));
+    }
+
+    private static Scene styledScene(Parent root, double width, double height) {
+        Scene scene = new Scene(root, width, height);
+        scene.getStylesheets().add(MainApp.class.getResource("/styles/whatsut.css").toExternalForm());
+        return scene;
     }
 
     private static void configureCallbacks(UiCallbackHandler callbackHandler, GroupsController groupsController,
@@ -78,19 +85,16 @@ public class MainApp extends Application {
         });
     }
 
+    @FunctionalInterface
+    private interface RemoteUiAction {
+        void run() throws Exception;
+    }
+
     private static void run(RemoteUiAction action) {
         try {
             action.run();
         } catch (Exception exception) {
             ViewSupport.showError(exception);
         }
-    }
-
-    private interface RemoteUiAction {
-        void run() throws Exception;
-    }
-
-    public static void main(String[] args) {
-        launch(args);
     }
 }
