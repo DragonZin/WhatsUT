@@ -133,7 +133,7 @@ public class ServerService extends UnicastRemoteObject implements ServerRemote {
         return approved;
     }
 
-    @Deprecated
+    @Override
     public synchronized boolean deleteUserFromGroup(String groupName, String adminName, String userName) throws RemoteException {
         isAuthenticated(adminName);
         Group group = getExistingGroup(groupName);
@@ -218,7 +218,10 @@ public class ServerService extends UnicastRemoteObject implements ServerRemote {
         isAuthenticated(Sender);
         ConversationKey key = new ConversationKey(Sender, Receiver);
         PrivateMessages messages = privateMessages.get(key);
-
+        if (messages == null) {
+            return List.of();
+        }
+        
         return messages.getMessages();
     }
 
