@@ -180,3 +180,51 @@
     -fx-padding: 8 12;
     -fx-prompt-text-fill: #8696a0;
 }
+
+.pending-requests-button {
+    -fx-background-color: #075e54;
+    -fx-padding: 8 14;
+    -fx-font-size: 12px;
+}
+
+.pending-requests-dialog {
+    -fx-background-color: #f0f2f5;
+}
+
+.pending-requests-dialog > *.button-bar > *.container {
+    -fx-background-color: #f0f2f5;
+}
+
+.pending-requests-content {
+    -fx-padding: 8 2 4 2;
+    -fx-min-width: 390;
+}
+
+.pending-requests-title {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #111b21;
+}
+
+.pending-request-list {
+    -fx-padding: 8 0 0 0;
+}
+
+.pending-request-row {
+    -fx-alignment: center-left;
+    -fx-padding: 10 12;
+    -fx-background-color: white;
+    -fx-background-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(17,27,33,0.08), 5, 0.1, 0, 1);
+}
+
+.pending-request-row .button {
+    -fx-padding: 7 12;
+    -fx-font-size: 12px;
+}
+
+.pending-request-name {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #111b21;
+}

@@ -25,7 +25,7 @@ public class GroupsView {
         Button refreshButton = new Button("Atualizar");
         refreshButton.getStyleClass().add("secondary-button");
         groupsList.setItems(controller.groups());
-        groupsList.setCellFactory(list -> ViewSupport.groupCell());
+        groupsList.setCellFactory(list -> ViewSupport.groupCell(controller.currentUserName()));
         groupsList.getSelectionModel().selectedItemProperty().addListener((obs, old, group) -> selectionHandler.accept(group));
         createButton.setOnAction(event -> run(() -> controller.createGroup(groupNameField.getText())));
         joinButton.setOnAction(event -> run(() -> controller.joinGroup(groupsList.getSelectionModel().getSelectedItem())));

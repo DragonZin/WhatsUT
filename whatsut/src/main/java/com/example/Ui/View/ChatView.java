@@ -1,6 +1,7 @@
 package com.example.Ui.View;
 
 import com.example.Ui.Controller.ChatController;
+import com.example.Models.Group;
 import javafx.geometry.Insets;
 import javafx.scene.Parent;
 import javafx.scene.control.Alert;
@@ -17,12 +18,13 @@ import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 
 import java.io.File;
+import java.util.function.Consumer;
 
 public class ChatView {
     private final BorderPane root = new BorderPane();
     private final TextField messageField = new TextField();
 
-    public ChatView(ChatController controller) {
+    public ChatView(ChatController controller, Consumer<Group> pendingRequestsAction) {
         root.getStyleClass().add("chat-root");
         Label title = new Label("Conversa");
         title.getStyleClass().add("chat-title");
@@ -30,7 +32,21 @@ public class ChatView {
         Label subtitle = new Label("Selecione um usuario ou grupo para iniciar");
         subtitle.getStyleClass().add("chat-subtitle");
         subtitle.textProperty().bind(controller.conversationSubtitleProperty());
-        root.setTop(new VBox(2, title, subtitle));
+        VBox conversationDetails = new VBox(2, title, subtitle);
+        Button pendingRequestsButton = new Button("Solicitacoes");
+        pendingRequestsButton.getStyleClass().add("pending-requests-button");
+        pendingRequestsButton.visibleProperty().bind(controller.selectedGroupAdminProperty());
+        pendingRequestsButton.managedProperty().bind(controller.selectedGroupAdminProperty());
+        pendingRequestsButton.setOnAction(event -> {
+            Group group = controller.selectedGroup();
+            if (group != null) {
+                pendingRequestsAction.accept(group);
+            }
+        });
+        HBox headerContent = new HBox(12, conversationDetails, pendingRequestsButton);
+        HBox.setHgrow(conversationDetails, Priority.ALWAYS);
+        headerContent.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+        root.setTop(headerContent);
         root.getTop().getStyleClass().add("chat-header");
 
         ListView<com.example.Models.Message> messagesList = new ListView<>(controller.messages());

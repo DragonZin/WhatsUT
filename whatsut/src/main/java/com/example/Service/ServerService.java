@@ -445,17 +445,26 @@ public class ServerService extends UnicastRemoteObject implements ServerRemote {
 
     private void notifyPrivateMessage(String senderName, String receiverName, Message message) {
         ClientRemote receiverClient = clientCallbacks.get(receiverName);
-        if (receiverClient == null) {
-            return;
+        if (receiverClient != null) {
+            callbackExecutor.submit(() -> {
+                try {
+                    receiverClient.refreshPrivateMessage(senderName, message);
+                } catch (RemoteException e) {
+                    removeDeadClient(receiverName);
+                }
+            });
         }
 
-        callbackExecutor.submit(() -> {
-            try {
-                receiverClient.refreshPrivateMessage(senderName, message);
-            } catch (RemoteException e) {
-                removeDeadClient(receiverName);
-            }
-        });
+        ClientRemote senderClient = clientCallbacks.get(senderName);
+        if (senderClient != null && !senderName.equals(receiverName)) {
+            callbackExecutor.submit(() -> {
+                try {
+                    senderClient.refreshPrivateMessage(receiverName, message);
+                } catch (RemoteException e) {
+                    removeDeadClient(senderName);
+                }
+            });
+        }
     }
 
     private void isAuthenticated(String userName) throws RemoteException {

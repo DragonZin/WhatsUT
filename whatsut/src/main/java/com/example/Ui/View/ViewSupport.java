@@ -27,7 +27,7 @@ public final class ViewSupport {
 
     private ViewSupport() { }
 
-    public static ListCell<Group> groupCell() {
+    public static ListCell<Group> groupCell(String currentUser) {
         return new ListCell<>() {
             @Override
             protected void updateItem(Group group, boolean empty) {
@@ -37,7 +37,8 @@ public final class ViewSupport {
                     getStyleClass().remove("unread-conversation");
                     return;
                 }
-                String pending = group.getPendingMembers().isEmpty() ? "" : " • 🔔 " + group.getPendingMembers().size();
+                boolean isAdmin = group.getAdmin().GetName().equals(currentUser);
+                String pending = isAdmin && !group.getPendingMembers().isEmpty() ? " • 🔔 " + group.getPendingMembers().size() : "";
                 setText("👥 %s\nAdmin: %s • membros: %d%s".formatted(
                         group.getName(), group.getAdmin().GetName(), group.getMembers().size(), pending));
             }
@@ -58,7 +59,7 @@ public final class ViewSupport {
         };
     }
 
-    public static ListCell<ConversationItem> conversationCell() {
+    public static ListCell<ConversationItem> conversationCell(String currentUser) {
         return new ListCell<>() {
             @Override
             protected void updateItem(ConversationItem item, boolean empty) {
@@ -74,7 +75,8 @@ public final class ViewSupport {
                     if (item.unread()) getStyleClass().add("unread-conversation");
                 } else {
                     Group group = item.group();
-                    String pending = group.getPendingMembers().isEmpty() ? "" : "  🔔 " + group.getPendingMembers().size();
+                    boolean isAdmin = group.getAdmin().GetName().equals(currentUser);
+                    String pending = isAdmin && !group.getPendingMembers().isEmpty() ? "  🔔 " + group.getPendingMembers().size() : "";
                     String unread = item.unread() ? "  ● " + item.unreadCount() : "";
                     setText("👥 %s%s\n%d membros%s".formatted(group.getName(), unread, group.getMembers().size(), pending));
                     getStyleClass().remove("unread-conversation");

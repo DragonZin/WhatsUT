@@ -5,7 +5,9 @@ import com.example.Models.Group;
 import com.example.Models.Message;
 import com.example.Ui.Service.RmiClientService;
 import javafx.collections.FXCollections;
+import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyStringProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.ObservableList;
 
@@ -23,6 +25,7 @@ public class ChatController {
     private String selectedPrivateUser;
     private final SimpleStringProperty conversationTitle = new SimpleStringProperty("Conversa");
     private final SimpleStringProperty conversationSubtitle = new SimpleStringProperty("Selecione um usuario ou grupo para iniciar");
+    private final SimpleBooleanProperty selectedGroupAdmin = new SimpleBooleanProperty(false);
 
     public ChatController(RmiClientService rmiClientService) {
         this.rmiClientService = rmiClientService;
@@ -38,6 +41,14 @@ public class ChatController {
 
     public ReadOnlyStringProperty conversationSubtitleProperty() {
         return conversationSubtitle;
+    }
+
+    public ReadOnlyBooleanProperty selectedGroupAdminProperty() {
+        return selectedGroupAdmin;
+    }
+
+    public Group selectedGroup() {
+        return selectedGroup;
     }
 
     public String currentUserName() {
@@ -65,6 +76,7 @@ public class ChatController {
     public void showPlaceholder(String title, String subtitle) {
         selectedGroup = null;
         selectedPrivateUser = null;
+        selectedGroupAdmin.set(false);
         messages.clear();
         conversationTitle.set(title);
         conversationSubtitle.set(subtitle);
@@ -73,6 +85,7 @@ public class ChatController {
     public void selectGroup(Group group) throws RemoteException {
         selectedGroup = group;
         selectedPrivateUser = null;
+        selectedGroupAdmin.set(group.getAdmin().GetName().equals(currentUserName()));
         conversationTitle.set(group.getName());
         conversationSubtitle.set("Grupo • " + group.getMembers().size() + " membros");
         refreshMessages();
@@ -81,6 +94,7 @@ public class ChatController {
     public void selectPrivateUser(String userName) throws RemoteException {
         selectedPrivateUser = userName;
         selectedGroup = null;
+        selectedGroupAdmin.set(false);
         conversationTitle.set(userName);
         conversationSubtitle.set("Conversa privada");
         refreshMessages();

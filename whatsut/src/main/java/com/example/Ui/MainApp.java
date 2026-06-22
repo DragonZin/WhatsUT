@@ -20,6 +20,8 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
@@ -75,7 +77,8 @@ public class MainApp extends Application {
         activeGroupsController = groupsController;
         activeChatController = chatController;
         activeUsersController = usersController;
-        ChatView chatView = new ChatView(chatController);
+        ChatView chatView = new ChatView(chatController,
+                group -> showPendingRequestsDialog(stage, groupsController, usersController, group.getName()));
         BorderPane center = new BorderPane(chatView.root());
         Parent sidebar = conversationsSidebar(stage, callbackHandler, groupsController, usersController, chatController, center, chatView.root());
         configureCallbacks(callbackHandler, groupsController, chatController, usersController, () -> refreshAll(groupsController, usersController));
@@ -88,7 +91,7 @@ public class MainApp extends Application {
     private Parent conversationsSidebar(Stage stage, UiCallbackHandler callbackHandler, GroupsController groupsController, UsersController usersController,
             ChatController chatController, BorderPane center, Parent chatRoot) {
         ListView<ConversationItem> list = new ListView<>(conversations);
-        list.setCellFactory(view -> ViewSupport.conversationCell());
+        list.setCellFactory(view -> ViewSupport.conversationCell(rmiClientService.getCurrentUser()));
         list.getSelectionModel().selectedItemProperty().addListener((obs, old, item) -> {
             if (item == null) {
                 return;
@@ -103,7 +106,6 @@ public class MainApp extends Application {
                 unreadCounts.remove(item.key());
                 rebuildConversations(groupsController, usersController);
                 run(() -> chatController.selectGroup(item.group()));
-                center.setBottom(pendingRequestsPanel(groupsController, item.group()));
             } else {
                 chatController.showPlaceholder(item.group().getName(), "Voce ainda nao participa deste grupo");
                 center.setCenter(joinRequestPanel(groupsController, item.group()));
@@ -148,23 +150,84 @@ public class MainApp extends Application {
     }
 
 
-    private Parent pendingRequestsPanel(GroupsController controller, Group group) {
+    private void showPendingRequestsDialog(Stage owner, GroupsController groupsController, UsersController usersController, String groupName) {
+        Group selectedGroup = groupsController.groups().stream()
+                .filter(group -> group.getName().equals(groupName))
+                .findFirst()
+                .orElse(null);
+        if (selectedGroup == null || !selectedGroup.getAdmin().GetName().equals(rmiClientService.getCurrentUser())) {
+            ViewSupport.showError(new IllegalAccessException("Apenas o administrador pode gerenciar solicitacoes."));
+            return;
+        }
+
+        Dialog<Void> dialog = new Dialog<>();
+        dialog.setTitle("Solicitacoes pendentes");
+        dialog.initOwner(owner);
+        dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
+        dialog.getDialogPane().getStylesheets().add(MainApp.class.getResource("/Styles/whatsut.css").toExternalForm());
+        dialog.getDialogPane().getStyleClass().add("pending-requests-dialog");
+
+        Label title = new Label();
+        title.getStyleClass().add("pending-requests-title");
+        Label subtitle = new Label("Revise quem pode entrar no grupo.");
+        subtitle.getStyleClass().add("muted-label");
         VBox rows = new VBox(8);
-        if (group.getPendingMembers().isEmpty()) {
-            rows.getChildren().add(new Label("Nao ha solicitacoes pendentes."));
-        } else {
+        rows.getStyleClass().add("pending-request-list");
+        VBox content = new VBox(8, title, subtitle, rows);
+        content.getStyleClass().add("pending-requests-content");
+        dialog.getDialogPane().setContent(content);
+
+        Runnable[] refreshDialog = new Runnable[1];
+        refreshDialog[0] = () -> {
+            Group group = groupsController.groups().stream()
+                    .filter(item -> item.getName().equals(groupName))
+                    .findFirst()
+                    .orElse(null);
+            if (group == null) {
+                dialog.close();
+                return;
+            }
+
+            title.setText("Solicitacoes pendentes (" + group.getPendingMembers().size() + ")");
+            rows.getChildren().clear();
+            if (group.getPendingMembers().isEmpty()) {
+                Label empty = new Label("Nenhuma solicitacao pendente.");
+                empty.getStyleClass().add("muted-label");
+                rows.getChildren().add(empty);
+                return;
+            }
+
             for (User user : group.getPendingMembers()) {
+                Label name = new Label(user.GetName());
+                name.getStyleClass().add("pending-request-name");
                 Button approve = new Button("Aprovar");
-                approve.setOnAction(event -> run(() -> controller.approveMember(group.getName(), user.GetName())));
                 Button reject = new Button("Recusar");
                 reject.getStyleClass().add("secondary-button");
-                reject.setOnAction(event -> run(() -> controller.rejectMember(group.getName(), user.GetName())));
-                rows.getChildren().add(new HBox(8, new Label(user.GetName()), approve, reject));
+                approve.setOnAction(event -> resolveJoinRequest(groupsController, usersController, groupName, user.GetName(), true, refreshDialog[0]));
+                reject.setOnAction(event -> resolveJoinRequest(groupsController, usersController, groupName, user.GetName(), false, refreshDialog[0]));
+                HBox row = new HBox(8, name, approve, reject);
+                row.getStyleClass().add("pending-request-row");
+                HBox.setHgrow(name, Priority.ALWAYS);
+                rows.getChildren().add(row);
             }
+        };
+        refreshDialog[0].run();
+        dialog.show();
+    }
+
+    private void resolveJoinRequest(GroupsController groupsController, UsersController usersController, String groupName,
+            String userName, boolean approve, Runnable refreshDialog) {
+        try {
+            if (approve) {
+                groupsController.approveMember(groupName, userName);
+            } else {
+                groupsController.rejectMember(groupName, userName);
+            }
+            refreshAll(groupsController, usersController);
+            refreshDialog.run();
+        } catch (Exception exception) {
+            ViewSupport.showError(exception);
         }
-        VBox box = new VBox(10, new Label("Solicitacoes pendentes (" + group.getPendingMembers().size() + ") - " + group.getName()), rows);
-        box.getStyleClass().add("panel-card");
-        return box;
     }
 
     private Parent createGroupPanel(GroupsController groupsController, UsersController usersController, Parent chatRoot, BorderPane center) {
@@ -263,7 +326,9 @@ public class MainApp extends Application {
         });
         callbackHandler.onPrivateMessage((senderName, message) -> {
             chatController.appendPrivateMessage(senderName, message);
-            markUnread("P:" + senderName);
+            if (!message.getSender().GetName().equals(rmiClientService.getCurrentUser())) {
+                markUnread("P:" + senderName);
+            }
         });
         callbackHandler.onError(ViewSupport::showError);
     }

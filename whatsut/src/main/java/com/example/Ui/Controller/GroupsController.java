@@ -22,6 +22,10 @@ public class GroupsController {
         return groups;
     }
 
+    public String currentUserName() {
+        return rmiClientService.getCurrentUser();
+    }
+
     public void refreshGroups() throws RemoteException {
         groups.setAll(rmiClientService.listGroups());
     }
