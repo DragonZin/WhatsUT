@@ -216,13 +216,13 @@ public class ServerService extends UnicastRemoteObject implements ServerRemote {
             throw new RemoteException("Apenas o administrador pode remover membros.");
         }
 
-        if (adminName.equals(userName)) {
-            groups.remove(groupName);
-        }
-
         boolean removed = group.removeMember(user);
         if (removed) {
+            if (adminName.equals(userName)) {
+                groups.remove(groupName);
+            }
             notifyParticipantRemoved(group, userName);
+            notifyAllGroupsChanged();
         }
         return removed;
     }

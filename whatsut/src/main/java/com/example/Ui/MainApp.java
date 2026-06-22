@@ -22,6 +22,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Dialog;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
@@ -79,7 +80,7 @@ public class MainApp extends Application {
         activeUsersController = usersController;
         ChatView chatView = new ChatView(chatController,
                 group -> showPendingRequestsDialog(stage, groupsController, usersController, group.getName()),
-                group -> showGroupMembersDialog(stage, chatController, group));
+                group -> showGroupMembersDialog(stage, groupsController, usersController, chatController, group));
         BorderPane center = new BorderPane(chatView.root());
         Parent sidebar = conversationsSidebar(stage, callbackHandler, groupsController, usersController, chatController, center, chatView.root());
         configureCallbacks(callbackHandler, groupsController, chatController, usersController, () -> refreshAll(groupsController, usersController));
@@ -216,7 +217,8 @@ public class MainApp extends Application {
         dialog.show();
     }
 
-    private void showGroupMembersDialog(Stage owner, ChatController chatController, Group group) {
+    private void showGroupMembersDialog(Stage owner, GroupsController groupsController, UsersController usersController,
+            ChatController chatController, Group group) {
         Dialog<Void> dialog = new Dialog<>();
         dialog.setTitle("Membros do grupo");
         dialog.initOwner(owner);
@@ -232,11 +234,17 @@ public class MainApp extends Application {
         rows.getStyleClass().add("group-members-list");
         Button refresh = new Button("Atualizar");
         refresh.getStyleClass().add("secondary-button");
-        VBox content = new VBox(8, title, subtitle, rows, refresh);
+        boolean isAdmin = group.getAdmin().GetName().equals(rmiClientService.getCurrentUser());
+        Button leaveGroup = new Button("Sair e encerrar grupo");
+        leaveGroup.getStyleClass().add("danger-button");
+        leaveGroup.setVisible(isAdmin);
+        leaveGroup.setManaged(isAdmin);
+        VBox content = new VBox(8, title, subtitle, rows, refresh, leaveGroup);
         content.getStyleClass().add("group-members-content");
         dialog.getDialogPane().setContent(content);
 
-        Runnable reload = () -> {
+        Runnable[] reload = new Runnable[1];
+        reload[0] = () -> {
             try {
                 java.util.List<User> members = chatController.listSelectedGroupMembers();
                 subtitle.setText(members.size() + (members.size() == 1 ? " membro" : " membros"));
@@ -250,6 +258,14 @@ public class MainApp extends Application {
                     VBox details = new VBox(2, name, role);
                     HBox row = new HBox(details);
                     row.getStyleClass().add("group-member-row");
+                    HBox.setHgrow(details, Priority.ALWAYS);
+                    if (isAdmin && !member.GetName().equals(group.getAdmin().GetName())) {
+                        Button remove = new Button("Remover");
+                        remove.getStyleClass().add("danger-button");
+                        remove.setOnAction(event -> removeGroupMember(groupsController, usersController, chatController,
+                                member.GetName(), reload[0]));
+                        row.getChildren().add(remove);
+                    }
                     rows.getChildren().add(row);
                 }
             } catch (Exception exception) {
@@ -257,9 +273,41 @@ public class MainApp extends Application {
                 dialog.close();
             }
         };
-        refresh.setOnAction(event -> reload.run());
-        reload.run();
+        refresh.setOnAction(event -> reload[0].run());
+        leaveGroup.setOnAction(event -> leaveGroupAsAdmin(dialog, groupsController, usersController, chatController, group.getName()));
+        reload[0].run();
         dialog.show();
+    }
+
+    private void removeGroupMember(GroupsController groupsController, UsersController usersController,
+            ChatController chatController, String userName, Runnable reload) {
+        try {
+            chatController.removeSelectedGroupMember(userName);
+            refreshAll(groupsController, usersController);
+            reload.run();
+        } catch (Exception exception) {
+            ViewSupport.showError(exception);
+        }
+    }
+
+    private void leaveGroupAsAdmin(Dialog<?> dialog, GroupsController groupsController, UsersController usersController,
+            ChatController chatController, String groupName) {
+        Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION,
+                "Ao sair, o grupo \"" + groupName + "\" sera encerrado para todos os membros.",
+                ButtonType.CANCEL, ButtonType.OK);
+        confirmation.setTitle("Sair do grupo");
+        confirmation.setHeaderText("Deseja sair e encerrar o grupo?");
+        if (confirmation.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) {
+            return;
+        }
+
+        try {
+            chatController.leaveSelectedGroupAsAdmin();
+            refreshAll(groupsController, usersController);
+            dialog.close();
+        } catch (Exception exception) {
+            ViewSupport.showError(exception);
+        }
     }
 
     private void resolveJoinRequest(GroupsController groupsController, UsersController usersController, String groupName,

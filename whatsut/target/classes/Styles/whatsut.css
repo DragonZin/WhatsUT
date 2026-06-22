@@ -284,3 +284,13 @@
     -fx-text-fill: #008069;
     -fx-font-weight: bold;
 }
+
+.danger-button {
+    -fx-background-color: #d64545;
+    -fx-padding: 7 12;
+    -fx-font-size: 12px;
+}
+
+.danger-button:hover {
+    -fx-background-color: #b83232;
+}

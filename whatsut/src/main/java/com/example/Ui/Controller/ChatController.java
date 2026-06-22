@@ -127,6 +127,23 @@ public class ChatController {
         return rmiClientService.listGroupUsers(selectedGroup.getName());
     }
 
+    public void removeSelectedGroupMember(String userName) throws RemoteException {
+        requireSelectedGroupAdmin();
+        if (userName == null || userName.isBlank()) {
+            throw new IllegalArgumentException("Informe o membro a remover.");
+        }
+        if (userName.equals(currentUserName())) {
+            throw new IllegalArgumentException("Use a opcao de sair do grupo.");
+        }
+        rmiClientService.removeGroupMember(selectedGroup.getName(), userName);
+    }
+
+    public void leaveSelectedGroupAsAdmin() throws RemoteException {
+        requireSelectedGroupAdmin();
+        rmiClientService.removeGroupMember(selectedGroup.getName(), currentUserName());
+        showPlaceholder("Conversa", "Selecione um usuario ou grupo para iniciar");
+    }
+
     public void appendGroupMessage(String groupName, Message message) {
         if (selectedGroup != null && selectedGroup.getName().equals(groupName)) {
             messages.add(message);
@@ -197,5 +214,14 @@ public class ChatController {
         } while (Files.exists(destination));
 
         return destination;
+    }
+
+    private void requireSelectedGroupAdmin() {
+        if (selectedGroup == null) {
+            throw new IllegalStateException("Selecione um grupo.");
+        }
+        if (!selectedGroup.getAdmin().GetName().equals(currentUserName())) {
+            throw new IllegalStateException("Apenas o administrador pode gerenciar membros.");
+        }
     }
 }

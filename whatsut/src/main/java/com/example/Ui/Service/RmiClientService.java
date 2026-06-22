@@ -93,6 +93,13 @@ public class RmiClientService implements AutoCloseable {
         return serverRemote.cancelJoinRequest(groupName, requireCurrentUser());
     }
 
+    public boolean removeGroupMember(String groupName, String userName) throws RemoteException {
+        if (groupName == null || groupName.isBlank() || userName == null || userName.isBlank()) {
+            throw new IllegalArgumentException("Informe o grupo e o usuario.");
+        }
+        return serverRemote.deleteUserFromGroup(groupName.trim(), requireCurrentUser(), userName.trim());
+    }
+
     public List<Message> getGroupMessages(String groupName) throws RemoteException {
         return serverRemote.getMessages(groupName, requireCurrentUser());
     }
