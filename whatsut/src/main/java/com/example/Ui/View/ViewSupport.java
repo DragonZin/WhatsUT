@@ -34,6 +34,7 @@ public final class ViewSupport {
                 super.updateItem(group, empty);
                 if (empty || group == null) {
                     setText(null);
+                    getStyleClass().remove("unread-conversation");
                     return;
                 }
                 String pending = group.getPendingMembers().isEmpty() ? "" : " • 🔔 " + group.getPendingMembers().size();
@@ -67,11 +68,17 @@ public final class ViewSupport {
                     return;
                 }
                 if (item.type() == ConversationItem.Type.PRIVATE) {
-                    setText("👤 %s  %s".formatted(item.name(), item.online() ? "🟢" : "⚫"));
+                    String unread = item.unread() ? "  ● " + item.unreadCount() : "";
+                    setText("👤 %s  %s%s".formatted(item.name(), item.online() ? "🟢" : "⚫", unread));
+                    getStyleClass().remove("unread-conversation");
+                    if (item.unread()) getStyleClass().add("unread-conversation");
                 } else {
                     Group group = item.group();
                     String pending = group.getPendingMembers().isEmpty() ? "" : "  🔔 " + group.getPendingMembers().size();
-                    setText("👥 %s\n%d membros%s".formatted(group.getName(), group.getMembers().size(), pending));
+                    String unread = item.unread() ? "  ● " + item.unreadCount() : "";
+                    setText("👥 %s%s\n%d membros%s".formatted(group.getName(), unread, group.getMembers().size(), pending));
+                    getStyleClass().remove("unread-conversation");
+                    if (item.unread()) getStyleClass().add("unread-conversation");
                 }
             }
         };

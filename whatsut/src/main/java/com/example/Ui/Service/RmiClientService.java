@@ -66,12 +66,24 @@ public class RmiClientService implements AutoCloseable {
         return serverRemote.createGroup(groupName, requireCurrentUser());
     }
 
+    public Group createGroup(String groupName, String description, List<String> memberNames) throws RemoteException {
+        return serverRemote.createGroup(groupName, description, requireCurrentUser(), memberNames);
+    }
+
     public boolean requestJoinGroup(String groupName) throws RemoteException {
         return serverRemote.requestJoinGroup(groupName, requireCurrentUser());
     }
 
     public boolean approvePendingMember(String groupName, String userName) throws RemoteException {
         return serverRemote.approvePendingMember(groupName, requireCurrentUser(), userName);
+    }
+
+    public boolean rejectPendingMember(String groupName, String userName) throws RemoteException {
+        return serverRemote.rejectPendingMember(groupName, requireCurrentUser(), userName);
+    }
+
+    public boolean cancelJoinRequest(String groupName) throws RemoteException {
+        return serverRemote.cancelJoinRequest(groupName, requireCurrentUser());
     }
 
     public List<Message> getGroupMessages(String groupName) throws RemoteException {

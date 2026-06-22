@@ -8,6 +8,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
+import javafx.application.Platform;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -33,6 +34,30 @@ public class ChatView {
         root.getTop().getStyleClass().add("chat-header");
 
         ListView<com.example.Models.Message> messagesList = new ListView<>(controller.messages());
+        Button recentButton = new Button("Ir para mensagens recentes");
+        recentButton.getStyleClass().add("secondary-button");
+        recentButton.setVisible(false);
+        recentButton.setManaged(false);
+        recentButton.setOnAction(event -> {
+            if (!controller.messages().isEmpty()) {
+                messagesList.scrollTo(controller.messages().size() - 1);
+                recentButton.setVisible(false);
+                recentButton.setManaged(false);
+            }
+        });
+        controller.messages().addListener((javafx.collections.ListChangeListener<com.example.Models.Message>) change -> Platform.runLater(() -> {
+            if (controller.messages().isEmpty()) {
+                return;
+            }
+            int lastVisible = messagesList.getSelectionModel().getSelectedIndex();
+            boolean nearEnd = lastVisible < 0 || lastVisible >= controller.messages().size() - 4;
+            if (nearEnd) {
+                messagesList.scrollTo(controller.messages().size() - 1);
+            } else {
+                recentButton.setVisible(true);
+                recentButton.setManaged(true);
+            }
+        }));
         messagesList.getStyleClass().add("message-list");
         messagesList.setCellFactory(list -> ViewSupport.messageCell(controller.currentUserName(), fileMessage -> run(() -> {
             DirectoryChooser chooser = new DirectoryChooser();
@@ -63,7 +88,8 @@ public class ChatView {
         composer.getStyleClass().add("composer");
         composer.setPadding(new Insets(12, 14, 12, 14));
         HBox.setHgrow(messageField, Priority.ALWAYS);
-        root.setCenter(messagesList);
+        root.setCenter(new VBox(messagesList, recentButton));
+        VBox.setVgrow(messagesList, Priority.ALWAYS);
         root.setBottom(composer);
     }
 

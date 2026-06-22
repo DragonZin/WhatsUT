@@ -89,9 +89,48 @@ public class ServerService extends UnicastRemoteObject implements ServerRemote {
             throw new RemoteException("Grupo ja existe: " + groupName);
         }
 
-        Group group = new Group(groupName, admin);
-        groups.put(groupName, group);
+        Group group = new Group(groupName.trim(), admin);
+        groups.put(group.getName(), group);
         notifyAllGroupsChanged();
+        notifyGroupCreated(adminName, group.getName());
+
+        return group;
+    }
+
+    @Override
+    public synchronized Group createGroup(String groupName, String description, String adminName, List<String> memberNames) throws RemoteException {
+        isAuthenticated(adminName);
+        validateRequired(groupName, "Nome do grupo");
+        User admin = getExistingUser(adminName);
+
+        if (groups.containsKey(groupName)) {
+            throw new RemoteException("Grupo ja existe: " + groupName);
+        }
+
+        if (memberNames == null || memberNames.isEmpty()) {
+            throw new RemoteException("Selecione ao menos um participante alem do administrador.");
+        }
+
+        List<User> initialMembers = new ArrayList<>();
+        for (String memberName : memberNames) {
+            validateRequired(memberName, "Usuario");
+            if (memberName.equals(adminName)) {
+                continue;
+            }
+            User member = getExistingUser(memberName);
+            if (initialMembers.contains(member)) {
+                throw new RemoteException("Usuario duplicado: " + memberName);
+            }
+            initialMembers.add(member);
+        }
+        if (initialMembers.isEmpty()) {
+            throw new RemoteException("Selecione ao menos um participante alem do administrador.");
+        }
+
+        Group group = new Group(groupName.trim(), description, admin, initialMembers);
+        groups.put(group.getName(), group);
+        notifyAllGroupsChanged();
+        group.getMembers().forEach(member -> notifyGroupCreated(member.GetName(), group.getName()));
 
         return group;
     }
@@ -127,10 +166,43 @@ public class ServerService extends UnicastRemoteObject implements ServerRemote {
 
         boolean approved = group.approvePendingMember(user);
         if (approved) {
+            notifyJoinApproved(group, userName);
             notifyGroupMembersChanged(group);
         }
 
         return approved;
+    }
+
+    @Override
+    public synchronized boolean rejectPendingMember(String groupName, String adminName, String userName) throws RemoteException {
+        isAuthenticated(adminName);
+        Group group = getExistingGroup(groupName);
+        User admin = getExistingUser(adminName);
+        User user = getExistingUser(userName);
+
+        if (!group.getAdmin().equals(admin)) {
+            throw new RemoteException("Apenas o administrador pode recusar solicitacoes.");
+        }
+
+        boolean rejected = group.rejectPendingMember(user);
+        if (rejected) {
+            notifyGroupsChanged(adminName);
+            notifyGroupsChanged(userName);
+        }
+        return rejected;
+    }
+
+    @Override
+    public synchronized boolean cancelJoinRequest(String groupName, String userName) throws RemoteException {
+        isAuthenticated(userName);
+        Group group = getExistingGroup(groupName);
+        User user = getExistingUser(userName);
+        boolean canceled = group.cancelPendingMember(user);
+        if (canceled) {
+            notifyGroupsChanged(group.getAdmin().GetName());
+            notifyGroupsChanged(userName);
+        }
+        return canceled;
     }
 
     @Override
@@ -148,7 +220,11 @@ public class ServerService extends UnicastRemoteObject implements ServerRemote {
             groups.remove(groupName);
         }
 
-        return group.removeMember(user);
+        boolean removed = group.removeMember(user);
+        if (removed) {
+            notifyParticipantRemoved(group, userName);
+        }
+        return removed;
     }
 
     @Override
@@ -332,6 +408,39 @@ public class ServerService extends UnicastRemoteObject implements ServerRemote {
                 }
             });
         });
+    }
+
+    private void notifyGroupCreated(String userName, String groupName) {
+        notifyClient(userName, client -> client.onGroupCreated(groupName));
+    }
+
+    private void notifyJoinApproved(Group group, String userName) {
+        notifyClient(userName, client -> client.onGroupJoinApproved(group.getName()));
+        group.getMembers().forEach(member -> notifyClient(member.GetName(), client -> client.onParticipantAdded(group.getName(), userName)));
+    }
+
+    private void notifyParticipantRemoved(Group group, String userName) {
+        notifyClient(userName, client -> client.onParticipantRemoved(group.getName(), userName));
+        group.getMembers().forEach(member -> notifyClient(member.GetName(), client -> client.onParticipantRemoved(group.getName(), userName)));
+    }
+
+    private void notifyClient(String userName, RemoteClientAction action) {
+        ClientRemote client = clientCallbacks.get(userName);
+        if (client == null) {
+            return;
+        }
+        callbackExecutor.submit(() -> {
+            try {
+                action.accept(client);
+            } catch (RemoteException e) {
+                removeDeadClient(userName);
+            }
+        });
+    }
+
+    @FunctionalInterface
+    private interface RemoteClientAction {
+        void accept(ClientRemote client) throws RemoteException;
     }
 
     private void notifyPrivateMessage(String senderName, String receiverName, Message message) {

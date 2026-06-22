@@ -35,6 +35,14 @@ public class UiCallbackHandler {
         errorHandler = handler == null ? exception -> { } : handler;
     }
 
+    public void clear() {
+        groupsRefreshHandler = () -> { };
+        joinRequestHandler = (groupName, requesterName) -> { };
+        groupMessageHandler = (groupName, message) -> { };
+        privateMessageHandler = (senderName, message) -> { };
+        errorHandler = exception -> { };
+    }
+
     void handleGroupsRefresh() {
         Platform.runLater(groupsRefreshHandler);
     }

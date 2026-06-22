@@ -19,9 +19,11 @@ import javafx.collections.ObservableList;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TextArea;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -30,12 +32,19 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 import java.rmi.RemoteException;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class MainApp extends Application {
     private RmiClientService rmiClientService;
     private final ObservableList<ConversationItem> conversations = FXCollections.observableArrayList();
+    private final Map<String, Integer> unreadCounts = new HashMap<>();
+    private ChatController activeChatController;
+    private GroupsController activeGroupsController;
+    private UsersController activeUsersController;
 
     @Override
     public void start(Stage stage) {
@@ -63,9 +72,12 @@ public class MainApp extends Application {
         GroupsController groupsController = new GroupsController(rmiClientService);
         ChatController chatController = new ChatController(rmiClientService);
         UsersController usersController = new UsersController(rmiClientService);
+        activeGroupsController = groupsController;
+        activeChatController = chatController;
+        activeUsersController = usersController;
         ChatView chatView = new ChatView(chatController);
         BorderPane center = new BorderPane(chatView.root());
-        Parent sidebar = conversationsSidebar(groupsController, usersController, chatController, center, chatView.root());
+        Parent sidebar = conversationsSidebar(stage, callbackHandler, groupsController, usersController, chatController, center, chatView.root());
         configureCallbacks(callbackHandler, groupsController, chatController, usersController, () -> refreshAll(groupsController, usersController));
         run(() -> refreshAll(groupsController, usersController));
         SplitPane splitPane = new SplitPane(sidebar, center);
@@ -73,7 +85,7 @@ public class MainApp extends Application {
         stage.setScene(styledScene(splitPane, 1040, 680));
     }
 
-    private Parent conversationsSidebar(GroupsController groupsController, UsersController usersController,
+    private Parent conversationsSidebar(Stage stage, UiCallbackHandler callbackHandler, GroupsController groupsController, UsersController usersController,
             ChatController chatController, BorderPane center, Parent chatRoot) {
         ListView<ConversationItem> list = new ListView<>(conversations);
         list.setCellFactory(view -> ViewSupport.conversationCell());
@@ -82,10 +94,16 @@ public class MainApp extends Application {
                 return;
             }
             center.setCenter(chatRoot);
+            center.setBottom(null);
             if (item.type() == ConversationItem.Type.PRIVATE) {
+                unreadCounts.remove(item.key());
+                rebuildConversations(groupsController, usersController);
                 run(() -> chatController.selectPrivateUser(item.user().GetName()));
             } else if (isMember(item.group(), rmiClientService.getCurrentUser())) {
+                unreadCounts.remove(item.key());
+                rebuildConversations(groupsController, usersController);
                 run(() -> chatController.selectGroup(item.group()));
+                center.setBottom(pendingRequestsPanel(groupsController, item.group()));
             } else {
                 chatController.showPlaceholder(item.group().getName(), "Voce ainda nao participa deste grupo");
                 center.setCenter(joinRequestPanel(groupsController, item.group()));
@@ -94,18 +112,18 @@ public class MainApp extends Application {
         Button createGroup = new Button("Criar grupo");
         createGroup.setMaxWidth(Double.MAX_VALUE);
         createGroup.setOnAction(event -> center.setCenter(createGroupPanel(groupsController, usersController, chatRoot, center)));
-        Button pending = new Button("Solicitacoes pendentes");
-        pending.setMaxWidth(Double.MAX_VALUE);
-        pending.setOnAction(event -> {
-            ConversationItem item = list.getSelectionModel().getSelectedItem();
-            if (item != null && item.type() == ConversationItem.Type.GROUP) {
-                center.setCenter(pendingRequestsPanel(groupsController, item.group()));
-            }
-        });
+        Button logout = new Button("Logout");
+        logout.setMaxWidth(Double.MAX_VALUE);
+        logout.getStyleClass().add("secondary-button");
+        logout.setOnAction(event -> run(() -> logout(stage, callbackHandler)));
+        Button close = new Button("Fechar aplicativo");
+        close.setMaxWidth(Double.MAX_VALUE);
+        close.getStyleClass().add("secondary-button");
+        close.setOnAction(event -> stage.close());
         Button refresh = new Button("Atualizar");
         refresh.setMaxWidth(Double.MAX_VALUE);
         refresh.setOnAction(event -> run(() -> refreshAll(groupsController, usersController)));
-        VBox sidebar = new VBox(8, new Label("Conversas"), createGroup, pending, refresh, list);
+        VBox sidebar = new VBox(8, new Label("Conversas"), createGroup, refresh, logout, close, list);
         sidebar.getStyleClass().add("sidebar");
         VBox.setVgrow(list, Priority.ALWAYS);
         return sidebar;
@@ -114,13 +132,17 @@ public class MainApp extends Application {
     private Parent joinRequestPanel(GroupsController controller, Group group) {
         boolean pending = isPending(group, rmiClientService.getCurrentUser());
         Label title = new Label(group.getName());
-        Label status = new Label(pending ? "Solicitacao enviada" : "Entre no grupo para conversar.");
-        Button join = new Button(pending ? "Solicitacao enviada" : "Pedir para entrar");
+        Label description = new Label(group.getDescription().isBlank() ? "Sem descricao" : group.getDescription());
+        Label members = new Label(group.getMembers().size() + " membros");
+        Label status = new Label(pending ? "Status: aguardando aprovacao" : "Status: nao solicitado");
+        Button join = new Button(pending ? "Aguardando aprovacao" : "Solicitar entrada");
         join.setDisable(pending);
-        join.setOnAction(event -> run(() -> controller.joinGroup(group)));
-        Button cancel = new Button("Cancelar");
-        cancel.setOnAction(event -> { });
-        VBox panel = new VBox(10, title, status, new HBox(8, join, cancel));
+        join.setOnAction(event -> run(() -> { controller.joinGroup(group); status.setText("Status: aguardando aprovacao"); join.setDisable(true); }));
+        Button cancel = new Button("Cancelar solicitacao");
+        cancel.getStyleClass().add("secondary-button");
+        cancel.setDisable(!pending);
+        cancel.setOnAction(event -> run(() -> { controller.cancelJoinRequest(group); status.setText("Status: nao solicitado"); join.setDisable(false); cancel.setDisable(true); }));
+        VBox panel = new VBox(10, title, description, members, status, new HBox(8, join, cancel));
         panel.getStyleClass().add("chat-header");
         return panel;
     }
@@ -135,29 +157,49 @@ public class MainApp extends Application {
                 Button approve = new Button("Aprovar");
                 approve.setOnAction(event -> run(() -> controller.approveMember(group.getName(), user.GetName())));
                 Button reject = new Button("Recusar");
-                reject.setDisable(true);
-                reject.setText("Recusar (TODO backend)");
+                reject.getStyleClass().add("secondary-button");
+                reject.setOnAction(event -> run(() -> controller.rejectMember(group.getName(), user.GetName())));
                 rows.getChildren().add(new HBox(8, new Label(user.GetName()), approve, reject));
             }
         }
-        return new VBox(10, new Label("Solicitacoes pendentes - " + group.getName()), rows);
+        VBox box = new VBox(10, new Label("Solicitacoes pendentes (" + group.getPendingMembers().size() + ") - " + group.getName()), rows);
+        box.getStyleClass().add("panel-card");
+        return box;
     }
 
     private Parent createGroupPanel(GroupsController groupsController, UsersController usersController, Parent chatRoot, BorderPane center) {
         TextField name = new TextField();
         name.setPromptText("Nome do grupo");
+        TextArea description = new TextArea();
+        description.setPromptText("Descricao do grupo");
+        description.setPrefRowCount(3);
         TextField search = new TextField();
-        search.setPromptText("Pesquisar usuarios (visualizacao)");
-        ListView<User> users = new ListView<>(usersController.users());
-        users.setCellFactory(view -> ViewSupport.userCell(user -> usersController.isOnline(user.GetName())));
+        search.setPromptText("Buscar usuarios");
+        VBox userChecks = new VBox(6);
+        Runnable rebuild = () -> {
+            userChecks.getChildren().clear();
+            String q = search.getText() == null ? "" : search.getText().toLowerCase();
+            usersController.users().stream()
+                    .filter(user -> !user.GetName().equals(rmiClientService.getCurrentUser()))
+                    .filter(user -> user.GetName().toLowerCase().contains(q))
+                    .forEach(user -> userChecks.getChildren().add(new CheckBox(user.GetName())));
+        };
+        search.textProperty().addListener((obs, old, value) -> rebuild.run());
+        rebuild.run();
         Button create = new Button("Criar grupo");
         create.setOnAction(event -> run(() -> {
-            groupsController.createGroup(name.getText());
-            ViewSupport.showInfo("Grupo criado. Adicionar membros diretamente exige novo metodo no backend RMI.");
+            java.util.List<String> selected = userChecks.getChildren().stream()
+                    .filter(node -> node instanceof CheckBox checkBox && checkBox.isSelected())
+                    .map(node -> ((CheckBox) node).getText())
+                    .collect(Collectors.toList());
+            groupsController.createGroup(name.getText(), description.getText(), selected);
+            ViewSupport.showInfo("Grupo criado com " + selected.size() + " participante(s).");
             refreshAll(groupsController, usersController);
             center.setCenter(chatRoot);
         }));
-        return new VBox(10, new Label("Criar grupo"), name, search, users, create);
+        VBox panel = new VBox(10, new Label("Criar grupo"), name, description, search, new Label("Participantes"), userChecks, create);
+        panel.getStyleClass().add("panel-card");
+        return panel;
     }
 
     private void refreshAll(GroupsController groupsController, UsersController usersController) throws RemoteException {
@@ -171,10 +213,30 @@ public class MainApp extends Application {
         String current = rmiClientService.getCurrentUser();
         Set<String> online = new HashSet<>();
         usersController.onlineUsers().forEach(user -> online.add(user.GetName()));
-        groupsController.groups().forEach(group -> conversations.add(ConversationItem.group(group)));
+        groupsController.groups().forEach(group -> conversations.add(ConversationItem.group(group, unreadCounts.getOrDefault("G:" + group.getName(), 0))));
         usersController.users().stream()
                 .filter(user -> !user.GetName().equals(current))
-                .forEach(user -> conversations.add(ConversationItem.privateUser(user, online.contains(user.GetName()))));
+                .forEach(user -> conversations.add(ConversationItem.privateUser(user, online.contains(user.GetName()), unreadCounts.getOrDefault("P:" + user.GetName(), 0))));
+    }
+
+
+    private void logout(Stage stage, UiCallbackHandler callbackHandler) throws Exception {
+        unreadCounts.clear();
+        callbackHandler.clear();
+        rmiClientService.close();
+        LoginController loginController = new LoginController(rmiClientService);
+        loginController.onLoginSuccess(userName -> showMainScene(stage, callbackHandler));
+        stage.setScene(styledScene(new LoginView(loginController).root(), 480, 420));
+    }
+
+
+    private void markUnread(String key) {
+        if (activeChatController == null || !activeChatController.currentConversationKey().equals(key)) {
+            unreadCounts.merge(key, 1, Integer::sum);
+        }
+        if (activeGroupsController != null && activeUsersController != null) {
+            rebuildConversations(activeGroupsController, activeUsersController);
+        }
     }
 
     private static boolean isMember(Group group, String userName) {
@@ -191,12 +253,18 @@ public class MainApp extends Application {
         return scene;
     }
 
-    private static void configureCallbacks(UiCallbackHandler callbackHandler, GroupsController groupsController,
+    private void configureCallbacks(UiCallbackHandler callbackHandler, GroupsController groupsController,
             ChatController chatController, UsersController usersController, RemoteUiAction refreshAction) {
         callbackHandler.onGroupsRefresh(() -> run(refreshAction));
         callbackHandler.onJoinRequest((groupName, requesterName) -> run(refreshAction));
-        callbackHandler.onGroupMessage(chatController::appendGroupMessage);
-        callbackHandler.onPrivateMessage(chatController::appendPrivateMessage);
+        callbackHandler.onGroupMessage((groupName, message) -> {
+            chatController.appendGroupMessage(groupName, message);
+            markUnread("G:" + groupName);
+        });
+        callbackHandler.onPrivateMessage((senderName, message) -> {
+            chatController.appendPrivateMessage(senderName, message);
+            markUnread("P:" + senderName);
+        });
         callbackHandler.onError(ViewSupport::showError);
     }
 

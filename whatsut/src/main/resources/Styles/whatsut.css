@@ -160,3 +160,23 @@
     -fx-border-color: transparent transparent #00a884 transparent;
     -fx-border-width: 0 0 3 0;
 }
+
+.panel-card {
+    -fx-background-color: white;
+    -fx-background-radius: 18;
+    -fx-padding: 18;
+    -fx-effect: dropshadow(gaussian, rgba(17,27,33,0.10), 12, 0.15, 0, 3);
+}
+
+.unread-conversation {
+    -fx-font-weight: bold;
+    -fx-background-color: #e7fce3;
+}
+
+.text-area {
+    -fx-background-color: white;
+    -fx-background-radius: 14;
+    -fx-border-color: transparent;
+    -fx-padding: 8 12;
+    -fx-prompt-text-fill: #8696a0;
+}

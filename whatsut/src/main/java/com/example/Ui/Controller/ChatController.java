@@ -44,6 +44,24 @@ public class ChatController {
         return rmiClientService.getCurrentUser();
     }
 
+        public String currentConversationKey() {
+        if (selectedGroup != null) {
+            return "G:" + selectedGroup.getName();
+        }
+        if (selectedPrivateUser != null) {
+            return "P:" + selectedPrivateUser;
+        }
+        return "";
+    }
+
+    public boolean isGroupOpen(String groupName) {
+        return selectedGroup != null && selectedGroup.getName().equals(groupName);
+    }
+
+    public boolean isPrivateOpen(String userName) {
+        return selectedPrivateUser != null && selectedPrivateUser.equals(userName);
+    }
+
     public void showPlaceholder(String title, String subtitle) {
         selectedGroup = null;
         selectedPrivateUser = null;

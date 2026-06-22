@@ -16,9 +16,12 @@ public interface ServerRemote extends Remote {
     void logout(String userName) throws RemoteException;
 
     Group createGroup(String groupName, String adminName) throws RemoteException;
+    Group createGroup(String groupName, String description, String adminName, List<String> memberNames) throws RemoteException;
 
     boolean requestJoinGroup(String groupName, String userName) throws RemoteException;
     boolean approvePendingMember(String groupName, String adminName, String userName) throws RemoteException;
+    boolean rejectPendingMember(String groupName, String adminName, String userName) throws RemoteException;
+    boolean cancelJoinRequest(String groupName, String userName) throws RemoteException;
 
     boolean deleteUserFromGroup(String groupName, String adminName, String userName) throws RemoteException;
 
