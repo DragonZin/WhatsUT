@@ -11,7 +11,7 @@ import javafx.scene.control.ListCell;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
-final class ViewSupport {
+public final class ViewSupport {
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss").withZone(ZoneId.systemDefault());
 
     private ViewSupport() { }
@@ -47,7 +47,7 @@ final class ViewSupport {
         };
     }
 
-    static void showError(Throwable throwable) {
+    public static void showError(Throwable throwable) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle("WhatsUT");
         alert.setHeaderText("Operacao nao concluida");
@@ -55,7 +55,7 @@ final class ViewSupport {
         alert.showAndWait();
     }
 
-    static void showInfo(String message) {
+    public static void showInfo(String message) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION, message);
         alert.setTitle("WhatsUT");
         alert.setHeaderText(null);
